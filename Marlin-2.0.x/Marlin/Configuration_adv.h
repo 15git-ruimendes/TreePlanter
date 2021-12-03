@@ -3230,7 +3230,7 @@
 // I2C Master ID for LPC176x LCD and Digital Current control
 // Does not apply to other peripherals based on the Wire library.
 //
-#define I2C_MASTER_ID  1  // Set a value from 0 to 2
+//#define I2C_MASTER_ID  1  // Set a value from 0 to 2
 
 /**
  * TWI/I2C BUS
@@ -3263,7 +3263,6 @@
 #define EXPERIMENTAL_I2CBUS
 #if ENABLED(EXPERIMENTAL_I2CBUS)
   #define I2C_SLAVE_ADDRESS  8  // Set a value from 8 to 127 to act as a slave
-  
 #endif
 
 // @section extras

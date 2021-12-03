@@ -28,6 +28,10 @@
  *  - https://github.com/grbl/grbl
  */
 
+#include <Wire.h>
+
+#include "core/serial.h"
+
 #include "MarlinCore.h"
 
 #include "HAL/shared/Delay.h"
@@ -1711,7 +1715,37 @@ void setup()
   marlin_state = MF_RUNNING;
 
   SETUP_LOG("setup() completed.");
+
+
+  Wire.begin(8);
+  Wire.onReceive(receiveEvent);
+
 }
+
+void receiveEvent(int howmany){
+
+  char string[32];
+  int i = 0;
+
+  while(1 < Wire.available()) // loop through all but the last
+  {
+    char c = Wire.read(); // receive byte as a character
+
+    string[i] = c;
+    i++;
+  }
+  string[i] = '\0';
+  int x = Wire.read();    // receive byte as an integer
+ // Serial.println(x);         // print the integer
+
+     queue.advance();
+     queue.inject(string);
+     endstops.event_handler();
+
+     TERN_(HAS_TFT_LVGL_UI, printer_state_polling());
+  //queue.inject("M117 Oi BOM DIA");
+}
+
 
 /**
  * The main Marlin program loop
@@ -1741,21 +1775,11 @@ void loop()
       finishSDPrinting();
 #endif
     
-    queue.advance();
+    // queue.advance();
     // queue.inject("M117 Trees Left: 100 000");
-    // queue.inject("G0 Y100");
-    
-    // queue.inject("G0 Y-100");
-    // queue.inject("G0 Y100");
-    // queue.inject("G0 Y-100");
-    
+    // endstops.event_handler();
 
-
-
-    // queue.inject("N8 G1 Y10");
-    endstops.event_handler();
-
-    TERN_(HAS_TFT_LVGL_UI, printer_state_polling());
+    // TERN_(HAS_TFT_LVGL_UI, printer_state_polling());
 
   } while (ENABLED(__AVR__)); // Loop forever on slower (AVR) boards
 }
