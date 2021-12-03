@@ -1733,6 +1733,7 @@ void loop()
   {
     idle();
 
+
 #if ENABLED(SDSUPPORT)
     if (card.flag.abort_sd_printing)
       abortSDPrinting();
@@ -1741,7 +1742,17 @@ void loop()
 #endif
     
     queue.advance();
-    queue.inject("M117 Trees Left: 100 000");
+    // queue.inject("M117 Trees Left: 100 000");
+    // queue.inject("G0 Y100");
+    
+    // queue.inject("G0 Y-100");
+    // queue.inject("G0 Y100");
+    // queue.inject("G0 Y-100");
+    
+
+
+
+    // queue.inject("N8 G1 Y10");
     endstops.event_handler();
 
     TERN_(HAS_TFT_LVGL_UI, printer_state_polling());
