@@ -29,6 +29,7 @@
  */
 
 #include <Wire.h>
+#include <ARDUINO.h>
 
 #include "core/serial.h"
 
@@ -1720,30 +1721,42 @@ void setup()
   Wire.begin(8);
   Wire.onReceive(receiveEvent);
 
+
 }
 
 void receiveEvent(int howmany){
 
-  char string[32];
+  SERIAL_ECHOLN("RECEBI ! ");
+
+  char str[32];
   int i = 0;
 
   while(1 < Wire.available()) // loop through all but the last
   {
     char c = Wire.read(); // receive byte as a character
 
-    string[i] = c;
+    str[i] = c;
     i++;
   }
-  string[i] = '\0';
-  int x = Wire.read();    // receive byte as an integer
- // Serial.println(x);         // print the integer
-
-     queue.advance();
-     queue.inject(string);
-     endstops.event_handler();
-
-     TERN_(HAS_TFT_LVGL_UI, printer_state_polling());
+  str[i] = '\0';
+  // int x = Wire.read();    // receive byte as an integer
+    // Serial.println(x);         // print the integer
+    // SERIAL_ECHOLN("\n");
+    // SERIAL_ECHOLN(string);
+    //SERIAL_ECHOLN("ola");
+    // SERIAL_ECHOLN("\n");
+    // report_echo_start(true);
+    //SERIAL_ECHOLNPGM_P(PSTR(parser.parse(str)));
+    SERIAL_ECHOLN(str);
+    //parser.parse(str);
+    
   //queue.inject("M117 Oi BOM DIA");
+    //queue.advance();
+    queue.inject(str);
+    queue.advance();
+    // endstops.event_handler();
+
+    // TERN_(HAS_TFT_LVGL_UI, printer_state_polling());
 }
 
 
@@ -1760,6 +1773,8 @@ void receiveEvent(int howmany){
  *    card, host, or by direct injection. The queue will continue to fill
  *    as long as idle() or manage_inactivity() are being called.
  */
+  char test_str;
+  uint8_t nbytes = 100;
 
 void loop()
 {
@@ -1767,6 +1782,11 @@ void loop()
   {
     idle();
 
+    i2c.capture(&test_str,nbytes);
+    //test_str[nbytes] ='\0';
+    //SERIAL_ECHOLN("A:");
+    //SERIAL_ECHOLN(test_str);
+    //SERIAL_ECHOLN(&test_str);
 
 #if ENABLED(SDSUPPORT)
     if (card.flag.abort_sd_printing)
@@ -1774,12 +1794,24 @@ void loop()
     if (marlin_state == MF_SD_COMPLETE)
       finishSDPrinting();
 #endif
+    //SERIAL_ECHOLN("oi\n");
     
-    // queue.advance();
+    queue.advance();
     // queue.inject("M117 Trees Left: 100 000");
-    // endstops.event_handler();
+    queue.inject("M117 Ola\n\r");
 
-    // TERN_(HAS_TFT_LVGL_UI, printer_state_polling());
+// TERN_(HAS_TFT_LVGL_UI, printer_state_polling());
 
+    // queue.advance();
+    // queue.inject("M117 xau\n\r");
+    endstops.event_handler();
+
+    TERN_(HAS_TFT_LVGL_UI, printer_state_polling());
+    delay(1000);
+    // SERIAL_ECHOLN("coiso: 1\n");
   } while (ENABLED(__AVR__)); // Loop forever on slower (AVR) boards
+    // SERIAL_ECHOLN(" SAI \n" );
+    // queue.advance();
+    // delay(1000);
+    // queue.inject("M117 surprise\n\r");
 }

@@ -15,23 +15,23 @@ bool fla = true;
 
 void loop() {
   // put your main code here, to run repeatedly:
+  
   Wire.beginTransmission(8); // transmit to device #4
   //Wire.write("M117 cona ");
   if(fla){
-    
-    Wire.write("G0 Y300"); // sends five bytes
+    Wire.write("G0 Y50\n"); // sends five bytes
   }else{
-    Wire.write("G0 Y-300"); // sends five bytes
+    Wire.write("G0 Y-50\n"); // sends five bytes
   }
-fla = !fla;
+  fla = !fla;
+  digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on 
+  delay(500);                       // wait for half a second
   
-  //ire.write("G0 Y300"); // sends five bytes
+  //Wire.write("G0 Y300"); // sends five bytes
   //Wire.write(x);              // sends one byte  
   Wire.endTransmission();    // stop transmitting
-    //digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on 
-  delay(500);                       // wait for half a second
-  //digitalWrite(LED_BUILTIN, LOW);    // turn the LED off 
-  //delay(500);
+  digitalWrite(LED_BUILTIN, LOW);    // turn the LED off 
+  delay(500);
 
 
   
