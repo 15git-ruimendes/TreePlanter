@@ -27,9 +27,28 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void stop();
 
-void receiveEvent(int howmany);
+//////////////////////////////////////////////////////////////////
+//                     TEAM F CONFIGURATION                     //
+//////////////////////////////////////////////////////////////////
+
+//INCLUDES
+#include <Wire.h> //For I2C communication
+
+//FUNCTIONS
+//Receives the master data by I2C
+//int bytes -> number of bytes received by the master
+void receiveEvent(int bytes);
+
+//Tell the master if the slave is free to receive a new command
+void requestEvent();
+
+
+//////////////////////////////////////////////////////////////////
+//                 END OF TEAM F CONFIGURATION                  //
+//////////////////////////////////////////////////////////////////
+
+void stop();
 
 // Pass true to keep steppers from timing out
 void idle(bool no_stepper_sleep=false);

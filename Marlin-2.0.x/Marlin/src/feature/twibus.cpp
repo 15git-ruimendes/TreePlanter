@@ -158,12 +158,12 @@ void TWIBus::flush() {
   }
 
   void i2c_on_receive(int bytes) { // just echo all bytes received to serial
-    i2c.receive(bytes);
+    //i2c.receive(bytes);
     // Serial.println("recebi: %u\n",bytes);
   }
 
   void i2c_on_request() {          // just send dummy data for now
-    i2c.reply("Hello World!\n");
+    //i2c.reply("Hello World!\n");
     // Serial.println("Ola mundo:pedi \n");
   }
 

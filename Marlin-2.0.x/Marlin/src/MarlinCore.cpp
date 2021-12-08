@@ -28,9 +28,6 @@
  *  - https://github.com/grbl/grbl
  */
 
-#include <Wire.h>
-#include <ARDUINO.h>
-
 #include "core/serial.h"
 
 #include "MarlinCore.h"
@@ -1191,6 +1188,22 @@ inline void tmc_standby_setup()
  */
 void setup()
 {
+
+//////////////////////////////////////////////////////////////////
+//                 TEAM F SETUP CONFIGURATION                   //
+//////////////////////////////////////////////////////////////////
+
+  //I2C setup configuration
+  Wire.begin(8);
+  Wire.onReceive(receiveEvent);
+  Wire.onRequest(requestEvent);
+
+
+//////////////////////////////////////////////////////////////////
+//               END OF TEAM F SETUP CONFIGURATION              //
+//////////////////////////////////////////////////////////////////
+
+
 #ifdef FASTIO_INIT
   FASTIO_INIT();
 #endif
@@ -1716,15 +1729,78 @@ void setup()
   marlin_state = MF_RUNNING;
 
   SETUP_LOG("setup() completed.");
-
-
-  Wire.begin(8);
-  Wire.onReceive(receiveEvent);
-
-
 }
 
-void receiveEvent(int howmany){
+//////////////////////////////////////////////////////////////////
+//                      TEAM F FUNCTIONS                        //
+//////////////////////////////////////////////////////////////////
+
+//GLOBAL VARIABLES
+//Checks if the received G-code task was completed and is ready to receive the new command from master
+// true -> slave is ready to receive another command
+// false -> slave is still processing the command and is not ready to receive another one
+bool i2c_flag = false;
+
+char message[32]; //I2C message string (Wire library has a limit of 32 bytes in a single transmission)
+
+int x = 1;
+
+//Informs the master if it's free or not when master ask for this information
+void requestEvent(){
+
+SERIAL_ECHOLN("OLA");
+
+  //Checks if the last command sent by the master was complete
+  //Slave is ready to receive another command and warns the master it's ready
+  if (i2c_flag == true){
+
+    //i2c.reply("tes");
+
+    Wire.write(x);
+    x++;
+    if (x > 6) x = 1;
+    //Wire.write("free");
+  }
+  else{
+    //Slave is not ready yet
+    Wire.write("occupied");
+  }
+}
+
+//Receives the data for the next G-code command
+void receiveEvent(int bytes){
+
+  SERIAL_ECHOLN("RECEBI ! ");
+
+  int i = 0;
+
+  while(Wire.available()) // loop through all but the last
+  {
+    char c = Wire.read(); // receive byte as a character
+
+    message[i] = c;
+    i++;
+  }
+  message[i] = '\0';
+  
+  SERIAL_ECHOLN(message);
+  
+  //Warns the master that slave will be occupied in case of a master request
+  i2c_flag = false;
+
+  //queue.inject(str);
+  //queue.advance();
+  // endstops.event_handler();
+}
+
+
+//////////////////////////////////////////////////////////////////
+//                  END OF TEAM F FUNCTIONS                     //
+//////////////////////////////////////////////////////////////////
+
+
+/*
+void receiveEvent(int bytes){
 
   SERIAL_ECHOLN("RECEBI ! ");
 
@@ -1758,7 +1834,7 @@ void receiveEvent(int howmany){
 
     // TERN_(HAS_TFT_LVGL_UI, printer_state_polling());
 }
-
+*/
 
 /**
  * The main Marlin program loop
@@ -1782,11 +1858,7 @@ void loop()
   {
     idle();
 
-    i2c.capture(&test_str,nbytes);
-    //test_str[nbytes] ='\0';
-    //SERIAL_ECHOLN("A:");
-    //SERIAL_ECHOLN(test_str);
-    //SERIAL_ECHOLN(&test_str);
+    //i2c.capture(&test_str,nbytes);
 
 #if ENABLED(SDSUPPORT)
     if (card.flag.abort_sd_printing)
@@ -1794,11 +1866,20 @@ void loop()
     if (marlin_state == MF_SD_COMPLETE)
       finishSDPrinting();
 #endif
-    //SERIAL_ECHOLN("oi\n");
     
+  if (i2c_flag == false){
+
+    queue.inject(message);
     queue.advance();
+
+    SERIAL_ECHOLN("dentro inject");
+
+    i2c_flag = true;
+  }
+
+    //queue.advance();
     // queue.inject("M117 Trees Left: 100 000");
-    queue.inject("M117 Ola\n\r");
+    //queue.inject("M117 Ola\n\r");
 
 // TERN_(HAS_TFT_LVGL_UI, printer_state_polling());
 
@@ -1807,7 +1888,7 @@ void loop()
     endstops.event_handler();
 
     TERN_(HAS_TFT_LVGL_UI, printer_state_polling());
-    delay(1000);
+    //delay(1000);
     // SERIAL_ECHOLN("coiso: 1\n");
   } while (ENABLED(__AVR__)); // Loop forever on slower (AVR) boards
     // SERIAL_ECHOLN(" SAI \n" );
