@@ -1739,10 +1739,11 @@ void setup()
 //Checks if the received G-code task was completed and is ready to receive the new command from master
 // true -> slave is ready to receive another command
 // false -> slave is still processing the command and is not ready to receive another one
-bool i2c_flag = false;
+bool i2c_flag = true;
 
 char message[32]; //I2C message string (Wire library has a limit of 32 bytes in a single transmission)
 
+//Este "x" eventualmente ira desaparecer
 int x = 1;
 
 //Informs the master if it's free or not when master ask for this information
@@ -1787,10 +1788,23 @@ void receiveEvent(int bytes){
   
   //Warns the master that slave will be occupied in case of a master request
   i2c_flag = false;
+}
 
-  //queue.inject(str);
-  //queue.advance();
-  // endstops.event_handler();
+
+/////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
+//Functions to be used if Ramps being only a slave doesn't work
+//It consists in assuming that the Ramps can also be a Master to send to the Arduino (the true Master)
+//that he is free (and in the future will ask for repetition of corrupted messages)
+
+//Sends a Message over I2C communication
+void send_message(char msg[]){
+
+  //Begins, sends and ends the transmission
+  Wire.beginTransmission(8);
+  Wire.write(msg);
+  Wire.endTransmission();
 }
 
 
@@ -1799,42 +1813,6 @@ void receiveEvent(int bytes){
 //////////////////////////////////////////////////////////////////
 
 
-/*
-void receiveEvent(int bytes){
-
-  SERIAL_ECHOLN("RECEBI ! ");
-
-  char str[32];
-  int i = 0;
-
-  while(1 < Wire.available()) // loop through all but the last
-  {
-    char c = Wire.read(); // receive byte as a character
-
-    str[i] = c;
-    i++;
-  }
-  str[i] = '\0';
-  // int x = Wire.read();    // receive byte as an integer
-    // Serial.println(x);         // print the integer
-    // SERIAL_ECHOLN("\n");
-    // SERIAL_ECHOLN(string);
-    //SERIAL_ECHOLN("ola");
-    // SERIAL_ECHOLN("\n");
-    // report_echo_start(true);
-    //SERIAL_ECHOLNPGM_P(PSTR(parser.parse(str)));
-    SERIAL_ECHOLN(str);
-    //parser.parse(str);
-    
-  //queue.inject("M117 Oi BOM DIA");
-    //queue.advance();
-    queue.inject(str);
-    queue.advance();
-    // endstops.event_handler();
-
-    // TERN_(HAS_TFT_LVGL_UI, printer_state_polling());
-}
-*/
 
 /**
  * The main Marlin program loop
@@ -1867,14 +1845,18 @@ void loop()
       finishSDPrinting();
 #endif
     
+  //Received a new command and will process it
   if (i2c_flag == false){
 
+    //Process the command, and make it the top priority
     queue.inject(message);
     queue.advance();
 
-    SERIAL_ECHOLN("dentro inject");
-
+    //Put flag at true and sends to his "master" (actually, is a slave) that the Ramps is free
     i2c_flag = true;
+    send_message('free');
+
+    SERIAL_ECHOLN("dentro inject");
   }
 
     //queue.advance();
@@ -1883,8 +1865,6 @@ void loop()
 
 // TERN_(HAS_TFT_LVGL_UI, printer_state_polling());
 
-    // queue.advance();
-    // queue.inject("M117 xau\n\r");
     endstops.event_handler();
 
     TERN_(HAS_TFT_LVGL_UI, printer_state_polling());
