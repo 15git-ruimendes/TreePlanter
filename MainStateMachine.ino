@@ -16,9 +16,11 @@
 int drill_X = 0;
 int drill_Y = 0;
 int state = 0;
+int prev_State = 0;
 int trees = 0;
 long double distance = 0;
 char *GCODE;
+char *RECV;
 
 void setup()
 {
@@ -49,7 +51,7 @@ int receive_Data(char *buff)
     {
         buff = Wire.read();
     }
-    if (buff == "-1")
+    if (*buff == NULL)
         return 0;
     else
         return 1;
@@ -130,16 +132,43 @@ void turn_On_Drill()
 {
 }
 
+bool read_Barrier_Sens()
+{
+    return false;
+}
+
 void loop()
 {
+    // Waiting States
+
+    // State 50 - Waiting for response from RAMPS
+    // State 60 - Waiting for tree drop (10sec) then repeat step
+    if (state == 50)
+    {
+        if (receive_Data(RECV))
+        {
+            state = (prev_State) * (prev_State < 7) + 1 * (trees > 0);
+        }
+    }
+    if (state = 60)
+    {
+        if (read_Barrier_Sens)
+        {
+            trees--;
+            state = (prev_State) * (prev_State < 7) + 1 * (trees > 0);
+        }
+    }
+    // Error States
+
     if (state == 100)
         return;
+
+    // Action States
 
     if (state == 0) // Read number of trees in machine and maybe ask for clod(torrão) size
     {
         display_LCD(0);
         Serial.println("Please Reload and/or Enter Number of Trees in Magazine");
-        get_NumberOfTrees();
     }
     else if (state == 1) // Wait for start command
     {
@@ -152,15 +181,9 @@ void loop()
         Serial.println("Moving!!");
         create_Sweeper_GCODE(0, GCODE);
         send_GCODE(GCODE);
-        create_Manipulator_GCODE(WIDTH / 2, Y_SIDE + distance - 5, GCODE);
-        send_GCODE(GCODE);
     }
     else if (state == 3) // Move. Don't Drill !!
     {
-        display_LCD(2);
-        Serial.println("Moving!!");
-        create_Sweeper_GCODE(0, GCODE);
-        send_GCODE(GCODE);
         create_Manipulator_GCODE(WIDTH / 2, Y_SIDE + distance - 5, GCODE);
         send_GCODE(GCODE);
     }
@@ -172,18 +195,67 @@ void loop()
         send_GCODE(GCODE);
         turn_On_Drill();
     }
-    else if (state == 5) // Place Tree
+    else if (state == 5) // Move. Don't Drill !!
+    {
+        display_LCD(2);
+        Serial.println("Moving!!");
+        create_Manipulator_GCODE(0, Y_SIDE + distance + 15, GCODE);
+        send_GCODE(GCODE);
+    }
+    else if (state == 6) // Place Tree
     {
         display_LCD(4);
         Serial.println("Planting!!");
         create_Magazine_GCODE(GCODE);
         send_GCODE(GCODE);
     }
-    else if (state == 6) // Activate sweeper
+    else if (state == 7) // Activate sweeper
     {
         display_LCD(5);
         Serial.println("Sweeping!!");
         create_Sweeper_GCODE(0, GCODE);
         send_GCODE(GCODE);
+    }
+
+    // Transitions
+    if (state == 0 && get_NumberOfTrees())
+    {
+        state = 1;
+    }
+    else if (state == 1)
+    {
+        state = 50;
+        prev_State = 1;
+    }
+    else if (state == 2)
+    {
+        distance = read_Distance();
+        state = 50;
+        prev_State = 2;
+    }
+    else if (state == 3)
+    {
+        state = 50;
+        prev_State = 3;
+    }
+    else if (state == 4)
+    {
+        state = 50;
+        prev_State = 4;
+    }
+    else if (state == 5)
+    {
+        state = 50;
+        prev_State = 5;
+    }
+    else if (state == 6)
+    {
+        state = 60;
+        prev_State = 6;
+    }
+    else if (state == 7)
+    {
+        state = 50;
+        prev_State = 7;
     }
 }
