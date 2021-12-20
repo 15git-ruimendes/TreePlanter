@@ -1829,6 +1829,7 @@ void send_message(char msg[]){
  */
   char test_str;
   uint8_t nbytes = 100;
+  bool flag_first = true;
 
 void loop()
 {
@@ -1836,7 +1837,6 @@ void loop()
   {
     idle();
 
-    //i2c.capture(&test_str,nbytes);
 
 #if ENABLED(SDSUPPORT)
     if (card.flag.abort_sd_printing)
@@ -1850,6 +1850,7 @@ void loop()
 
     //Process the command, and make it the top priority
     queue.inject(message);
+    
     queue.advance();
 
     //Put flag at true and sends to his "master" (actually, is a slave) that the Ramps is free
@@ -1858,21 +1859,22 @@ void loop()
 
     SERIAL_ECHOLN("dentro inject");
   }
+	      //Teste para ver o estado das endstops
+		//queue.inject("M119");
+		//queue.advance();
 
-    //queue.advance();
-    // queue.inject("M117 Trees Left: 100 000");
-    //queue.inject("M117 Ola\n\r");
+      //if(flag_first){
+      //  queue.inject("G0 X100");
+      //  queue.advance();
+      //  flag_first = false;
+      //}
 
-// TERN_(HAS_TFT_LVGL_UI, printer_state_polling());
-
+    
+    
     endstops.event_handler();
 
     TERN_(HAS_TFT_LVGL_UI, printer_state_polling());
-    //delay(1000);
-    // SERIAL_ECHOLN("coiso: 1\n");
+
   } while (ENABLED(__AVR__)); // Loop forever on slower (AVR) boards
-    // SERIAL_ECHOLN(" SAI \n" );
-    // queue.advance();
-    // delay(1000);
-    // queue.inject("M117 surprise\n\r");
+
 }

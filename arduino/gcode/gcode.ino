@@ -13,23 +13,25 @@
 #define SETUP_1 "G17"
 #define SETUP_2 "G21"
 #define SETUP_3 "G91"
+#define GO_HOME "G28"
 
 String gcode;
-int order_gcode = 0;
+int order_gcode = 3;
+bool flag_ready_to_send = true;
 
 
 void setup() {
   Serial.begin(115200);
-  // put your setup code here, to run once:
-  Wire.begin(); // join i2c bus (address optional for master)
+  
+  Wire.begin(I2CADDRESS); // join i2c bus (address optional for master)
+  Wire.onReceive(receiveEvent);// receive codes from RAMPS
+
   pinMode(LED_BUILTIN, OUTPUT);
-
-
   
 }
 
 byte x = 0;
-bool fla = true;
+bool flag_first = true;
 
 void loop() {
   // put your main code here, to run repeatedly:
@@ -54,8 +56,6 @@ void loop() {
   
   Serial.println("Write order_gcode number (0-6)"); 
   delay(1000);
-  
-
   delay(1000);
     
     //Serial.println(order_gcode);
@@ -88,25 +88,28 @@ void loop() {
         gcode = "G1 Y" + String(HEIGHT-Y_SIDE) + " F" + String(MOV_SPEED); 
         break;
     }
-    
+
+
+
+
+
+
+	//Teste para apenas um comando    
+	gcode = "G0 X" + String(WIDTH/2)+ " F" + String(MOV_SPEED);
 
     //Serial.println(gcode);
     char char_arr[gcode.length()+1];
     gcode.toCharArray(char_arr,gcode.length()+1);
     char_arr[gcode.length()+1] = '\0';
-    
-    //Wire.write(char_arr);    
-    //Serial.print("Gcode:");
-    //Serial.println(char_arr);
 
-    if(order_gcode != 111){
+    if(flag_ready_to_send and flag_first){
       sendGcode(char_arr);
+      flag_ready_to_send = false;
+      flag_first = false;
     }
       
     
-    Serial.println(char_arr);
-  
-
+    //Serial.println(char_arr);
 }
 
 void updateState(){
@@ -119,7 +122,6 @@ void updateState(){
       Serial.print("Resposta: ");
       Serial.println(order_gcode);
     }
-
 }
 
 void sendGcode(char gcode[]){
@@ -130,8 +132,8 @@ void sendGcode(char gcode[]){
 
   Wire.endTransmission();
 
-  Serial.print(gcode); 
-  Serial.print("[Arduino]: Acabei de enviar ");
+  Serial.println(gcode); 
+
 }
 
 
@@ -140,7 +142,6 @@ void receiveEvent(int bytes){
   char message[30];
 
   Serial.println("[Arduino]: Recebi mensagem do RAMPS ! ");
-
   int i = 0;
 
   while(Wire.available()) // loop through all but the last
@@ -156,4 +157,6 @@ void receiveEvent(int bytes){
   order_gcode++;
   if(order_gcode > 8)
     order_gcode = 3;
+
+  flag_ready_to_send = true;
 }
