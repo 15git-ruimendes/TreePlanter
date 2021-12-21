@@ -1,5 +1,5 @@
 #include "Arduino.h"
-//#include <Wire.h>
+#include <Wire.h>
 
 #define BUTTON 1
 #define DIST_SENS 2
@@ -17,7 +17,7 @@ int drill_X = 0;
 int drill_Y = 0;
 int state = 0;
 int prev_State = 0;
-int trees = 0;
+int trees = 2;
 long double distance = 0;
 char *GCODE;
 char *RECV;
@@ -31,10 +31,11 @@ void setup()
 
 int send_GCODE(char *buff)
 {
-    Wire.beginTransmission(8);
+    Serial.println(buff);
+    Wire.beginTransmission(0x08);
     Wire.write(buff);
 
-    int success = Wire.endTransmission();
+    int success = Wire.endTransmission(true);
     if (!success)
         return 1;
     else
@@ -43,59 +44,53 @@ int send_GCODE(char *buff)
 
 int receive_Data(char *buff)
 {
-    free(buff);
-    buff = (char *)malloc(sizeof(char));
-    Wire.requestFrom(8, 1);
+    int c = 0;
+    Wire.requestFrom(0x08, 64);
 
-    while (Wire.available())
-    {
-        buff = Wire.read();
-    }
-    if (*buff == NULL)
-        return 0;
-    else
-        return 1;
+    c = Wire.read();
+
+    return (c == 5);
 }
 
 void create_Manipulator_GCODE(int x_axis, int y_axis, char *buff)
 {
-    free(buff);
+    ////free(GCODE);
     String aux;
     aux = "G0 X" + String(x_axis) + "Y" + String(y_axis) + " F" + String(MOV_SPEED);
-    buff = (char *)malloc(sizeof(char) * (aux.length() + 1));
-    aux.toCharArray(buff, aux.length() + 1);
-    buff[aux.length() + 1] = '\0';
+    GCODE = (char *)malloc(sizeof(char) * (aux.length() + 1));
+    aux.toCharArray(GCODE, aux.length() + 1);
+    GCODE[aux.length() + 1] = '\0';
 }
 
 void create_Magazine_GCODE(char *buff)
 {
-    free(buff);
+    //free(GCODE);
     String aux;
     aux = "G0 Z" + String(MAG_ANGLE) + " F" + String(MOV_SPEED);
-    buff = (char *)malloc(sizeof(char) * (aux.length() + 1));
-    aux.toCharArray(buff, aux.length() + 1);
-    buff[aux.length() + 1] = '\0';
+    GCODE = (char *)malloc(sizeof(char) * (aux.length() + 1));
+    aux.toCharArray(GCODE, aux.length() + 1);
+    GCODE[aux.length() + 1] = '\0';
 }
 
 void create_Sweeper_GCODE(int close_Open, char *buff)
 {
     if (close_Open == 0) // Close
     {
-        free(buff);
+        //free(GCODE);
         String aux;
         aux = "G0 E" + String(SWEEPER_DISTANCE) + " F" + String(MOV_SPEED);
-        buff = (char *)malloc(sizeof(char) * (aux.length() + 1));
-        aux.toCharArray(buff, aux.length() + 1);
-        buff[aux.length() + 1] = '\0';
+        GCODE = (char *)malloc(sizeof(char) * (aux.length() + 1));
+        aux.toCharArray(GCODE, aux.length() + 1);
+        GCODE[aux.length() + 1] = '\0';
     }
     else if (close_Open == 1) // Open
     {
-        free(buff);
+        //free(GCODE);
         String aux;
         aux = "G0 E-" + String(SWEEPER_DISTANCE) + " F" + String(MOV_SPEED);
-        buff = (char *)malloc(sizeof(char) * (aux.length() + 1));
-        aux.toCharArray(buff, aux.length() + 1);
-        buff[aux.length() + 1] = '\0';
+        GCODE = (char *)malloc(sizeof(char) * (aux.length() + 1));
+        aux.toCharArray(GCODE, aux.length() + 1);
+        GCODE[aux.length() + 1] = '\0';
     }
 }
 
@@ -107,7 +102,10 @@ void calibrate_Manipulator()
 {
     Serial.println("Running Setup Operations!!!");
     display_LCD(99);
-    if (send_GCODE(SETUP))
+    char setup[14] = "G17 G21 G91 \0";
+    //char teste[7] = "Hello";
+    //send_GCODE(SETUP);
+    if (send_GCODE(setup))
         return;
     else
         Serial.println("Error on SetUp Check All Connections");
@@ -118,8 +116,10 @@ void update_Position(int x, int y)
 {
 }
 
-int get_NumberOfTrees()
+bool get_NumberOfTrees()
 {
+    trees = 10;
+    return true * (state == 0);
 }
 
 long double read_Distance()
@@ -134,34 +134,16 @@ void turn_On_Drill()
 
 bool read_Barrier_Sens()
 {
-    return false;
+    return true;
 }
 
 void loop()
 {
-    // Waiting States
 
-    // State 50 - Waiting for response from RAMPS
-    // State 60 - Waiting for tree drop (10sec) then repeat step
-    if (state == 50)
-    {
-        if (receive_Data(RECV))
-        {
-            state = (prev_State) * (prev_State < 7) + 1 * (trees > 0);
-        }
-    }
-    if (state = 60)
-    {
-        if (read_Barrier_Sens)
-        {
-            trees--;
-            state = (prev_State) * (prev_State < 7) + 1 * (trees > 0);
-        }
-    }
+    Serial.println(state);
     // Error States
 
-    if (state == 100)
-        return;
+    //if (state == 100)
 
     // Action States
 
@@ -169,11 +151,17 @@ void loop()
     {
         display_LCD(0);
         Serial.println("Please Reload and/or Enter Number of Trees in Magazine");
+        state = 50;
+        prev_State = 0;
     }
     else if (state == 1) // Wait for start command
     {
         display_LCD(1);
         Serial.println("Waiting for Start Command");
+        create_Sweeper_GCODE(0, GCODE);
+        send_GCODE(GCODE);
+        state = 50;
+        prev_State = 1;
     }
     else if (state == 2) // Move. Don't Drill !!
     {
@@ -181,11 +169,15 @@ void loop()
         Serial.println("Moving!!");
         create_Sweeper_GCODE(0, GCODE);
         send_GCODE(GCODE);
+        state = 50;
+        prev_State = 2;
     }
     else if (state == 3) // Move. Don't Drill !!
     {
         create_Manipulator_GCODE(WIDTH / 2, Y_SIDE + distance - 5, GCODE);
         send_GCODE(GCODE);
+        state = 50;
+        prev_State = 3;
     }
     else if (state == 4) // Drill and move
     {
@@ -194,6 +186,8 @@ void loop()
         create_Manipulator_GCODE(0, distance + 15, GCODE);
         send_GCODE(GCODE);
         turn_On_Drill();
+        state = 50;
+        prev_State = 4;
     }
     else if (state == 5) // Move. Don't Drill !!
     {
@@ -201,6 +195,8 @@ void loop()
         Serial.println("Moving!!");
         create_Manipulator_GCODE(0, Y_SIDE + distance + 15, GCODE);
         send_GCODE(GCODE);
+        state = 50;
+        prev_State = 5;
     }
     else if (state == 6) // Place Tree
     {
@@ -208,6 +204,8 @@ void loop()
         Serial.println("Planting!!");
         create_Magazine_GCODE(GCODE);
         send_GCODE(GCODE);
+        state = 60;
+        prev_State = 6;
     }
     else if (state == 7) // Activate sweeper
     {
@@ -215,6 +213,8 @@ void loop()
         Serial.println("Sweeping!!");
         create_Sweeper_GCODE(0, GCODE);
         send_GCODE(GCODE);
+        state = 50;
+        prev_State = 7;
     }
 
     // Transitions
@@ -222,40 +222,30 @@ void loop()
     {
         state = 1;
     }
-    else if (state == 1)
+
+    // Waiting States
+    // State 50 - Waiting for response from RAMPS
+    // State 60 - Waiting for tree drop (10sec) then repeat step
+    if (state == 50)
     {
-        state = 50;
-        prev_State = 1;
+        delay(1000);
+        if (receive_Data(RECV))
+        {
+            state = (prev_State) * (prev_State < 7) + 1 * (trees > 0);
+            delay(1000);
+        }
+        else
+        {
+            send_GCODE(GCODE);
+            delay(1000);
+        }
     }
-    else if (state == 2)
+    if (state == 60)
     {
-        distance = read_Distance();
-        state = 50;
-        prev_State = 2;
-    }
-    else if (state == 3)
-    {
-        state = 50;
-        prev_State = 3;
-    }
-    else if (state == 4)
-    {
-        state = 50;
-        prev_State = 4;
-    }
-    else if (state == 5)
-    {
-        state = 50;
-        prev_State = 5;
-    }
-    else if (state == 6)
-    {
-        state = 60;
-        prev_State = 6;
-    }
-    else if (state == 7)
-    {
-        state = 50;
-        prev_State = 7;
+        if (read_Barrier_Sens())
+        {
+            trees--;
+            state = ((prev_State) * (prev_State < 7) + 1) * (trees > 0);
+        }
     }
 }
