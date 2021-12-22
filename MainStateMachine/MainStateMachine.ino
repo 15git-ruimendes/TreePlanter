@@ -100,7 +100,7 @@ void create_Sweeper_GCODE(int close_Open, char *buff)
 
 void display_LCD(int page_Number)
 {
-    if (page == 1)
+    if (page_Number == 1)
         page_1();
     else
         page_2();
