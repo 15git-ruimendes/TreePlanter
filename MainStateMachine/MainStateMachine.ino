@@ -1,6 +1,6 @@
 #include "Arduino.h"
-#include <Wire.h>
-#include <U8glib.h>
+#include "Wire.h"
+#include "U8glib.h"
 
 #define BUTTON 1
 #define DIST_SENS 2
@@ -67,7 +67,7 @@ void create_Manipulator_GCODE(int x_axis, int y_axis, char *buff)
 
 void create_Magazine_GCODE(char *buff)
 {
-    //free(GCODE);
+    // free(GCODE);
     String aux;
     aux = "G0 Z" + String(MAG_ANGLE) + " F" + String(MOV_SPEED);
     GCODE = (char *)malloc(sizeof(char) * (aux.length() + 1));
@@ -79,7 +79,7 @@ void create_Sweeper_GCODE(int close_Open, char *buff)
 {
     if (close_Open == 0) // Close
     {
-        //free(GCODE);
+        // free(GCODE);
         String aux;
         aux = "G0 E" + String(SWEEPER_DISTANCE) + " F" + String(MOV_SPEED);
         GCODE = (char *)malloc(sizeof(char) * (aux.length() + 1));
@@ -88,7 +88,7 @@ void create_Sweeper_GCODE(int close_Open, char *buff)
     }
     else if (close_Open == 1) // Open
     {
-        //free(GCODE);
+        // free(GCODE);
         String aux;
         aux = "G0 E-" + String(SWEEPER_DISTANCE) + " F" + String(MOV_SPEED);
         GCODE = (char *)malloc(sizeof(char) * (aux.length() + 1));
@@ -106,8 +106,8 @@ void calibrate_Manipulator()
     Serial.println("Running Setup Operations!!!");
     display_LCD(99);
     char setup[14] = "G17 G21 G91 \0";
-    //char teste[7] = "Hello";
-    //send_GCODE(SETUP);
+    // char teste[7] = "Hello";
+    // send_GCODE(SETUP);
     if (send_GCODE(setup))
         return;
     else
@@ -146,7 +146,7 @@ void loop()
     Serial.println(state);
     // Error States
 
-    //if (state == 100)
+    // if (state == 100)
 
     // Action States
 
