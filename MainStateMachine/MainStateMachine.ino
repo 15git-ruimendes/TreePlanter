@@ -14,7 +14,7 @@
 #define MOV_SPEED 100       // movemente speed mm/min
 #define SETUP "G17 G21 G91"
 
-U8GLIB_ST7920_128X64_1X u8g(23, 16, 17);
+U8GLIB_ST7920_128X64_1X u8g(23, 17, 16);
 
 int drill_X = 0;
 int drill_Y = 0;
@@ -29,6 +29,7 @@ void setup()
 {
     Serial.begin(9600);
     Wire.begin();
+    u8g.setColorIndex(1);
     calibrate_Manipulator();
 }
 
@@ -99,6 +100,54 @@ void create_Sweeper_GCODE(int close_Open, char *buff)
 
 void display_LCD(int page_Number)
 {
+    if (page == 1)
+        page_1();
+    else
+        page_2();
+}
+
+void page_1()
+{
+    u8g.setFont(u8g_font_6x10);
+    u8g.drawStr(0, 10, "Tree Planter!");
+    u8g.drawLine(0, 15, 80, 15);
+    u8g.drawLine(80, 0, 80, 64);
+    u8g.setFont(u8g_font_6x10);
+    u8g.drawStr(85, 10, "# Trees");
+    u8g.setFont(u8g_font_6x10);
+    u8g.drawStr(100, 25, "10");
+    u8g.drawFrame(80, 28, 48, 18);
+    u8g.drawStr(81, 40, "Reaload?");
+    u8g.drawBox(80, 46, 48, 18);
+    u8g.setColorIndex(0);
+    u8g.drawStr(87, 55, "Start?");
+    u8g.setColorIndex(1);
+    u8g.setFont(u8g_font_unifont);
+    u8g.drawStr(5, 30, "Waiting");
+    u8g.drawStr(5, 45, "For");
+    u8g.drawStr(5, 60, "Start...");
+}
+
+void page_2()
+{
+    u8g.setFont(u8g_font_6x10);
+    u8g.drawStr(0, 10, "Tree Planter!");
+    u8g.drawLine(0, 15, 80, 15);
+    u8g.drawLine(80, 0, 80, 64);
+    u8g.setFont(u8g_font_6x10);
+    u8g.drawStr(85, 10, "# Trees");
+    u8g.setFont(u8g_font_6x10);
+    u8g.drawStr(100, 25, "10");
+    u8g.drawBox(80, 28, 48, 18);
+    u8g.setColorIndex(0);
+    u8g.drawStr(81, 40, "Reaload?");
+    u8g.setColorIndex(1);
+    u8g.drawFrame(80, 46, 48, 18);
+    u8g.drawStr(87, 55, "Start?");
+    u8g.setFont(u8g_font_unifont);
+    u8g.drawStr(5, 30, "Waiting");
+    u8g.drawStr(5, 45, "For");
+    u8g.drawStr(5, 60, "Start...");
 }
 
 void calibrate_Manipulator()
@@ -142,6 +191,12 @@ bool read_Barrier_Sens()
 
 void loop()
 {
+
+    u8g.firstPage();
+    do
+    {
+        display_LCD(page);
+    } while (u8g.nextPage());
 
     Serial.println(state);
     // Error States
