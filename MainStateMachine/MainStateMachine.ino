@@ -1,5 +1,6 @@
 #include "Arduino.h"
 #include <Wire.h>
+#include <U8glib.h>
 
 #define BUTTON 1
 #define DIST_SENS 2
@@ -12,6 +13,8 @@
 #define SWEEPER_DISTANCE 20 // Amount to close sweeper
 #define MOV_SPEED 100       // movemente speed mm/min
 #define SETUP "G17 G21 G91"
+
+U8GLIB_ST7920_128X64_1X u8g(23, 16, 17);
 
 int drill_X = 0;
 int drill_Y = 0;
