@@ -9,57 +9,82 @@
 #define X_OBSTACLE 20 // position to avoid the tree storage on the right
 #define MOV_SPEED 100  // movemente speed mm/min
 
+#define FREE "fre" //the slave (RAMPS) is free to receive another message
+#define OCCUPIED "ocp" //the slave(RAMPS) is occupied and cannot receive another message
+
+//Manipulator defines
+#define MOVING 1 //Manipulator is moving
+#define PERFURATING 2 //Manipulator is ready to, or perfurating
+#define LIFTING 3 //Manipulator is ready to, or lifting after the perfuration
+#define SOIL 4 //Manipulator is ready to, or dropping the soil
+#define DONE 5 //Manipulator is done
+
 
 #define SETUP_1 "G17"
 #define SETUP_2 "G21"
 #define SETUP_3 "G91"
 #define GO_HOME "G28"
 
+
+//GLOBAL VARIABLES
+char slave_response[4];
+
 String gcode;
 int order_gcode = 3;
 bool flag_ready_to_send = true;
 
+//RUN THIS ON SETUP
+//Will configure the i2c communication responsable to send the gcode commands
+void gcode_configuration(){
 
-void setup() {
-  Serial.begin(115200);
-  
-  Wire.begin(I2CADDRESS); // join i2c bus (address optional for master)
-  Wire.onReceive(receiveEvent);// receive codes from RAMPS
-
-  pinMode(LED_BUILTIN, OUTPUT);
-  
+  Wire.begin(I2CADDRESS);
 }
 
-byte x = 0;
-bool flag_first = true;
+//Send the gcode command to the slave (the RAMPS)
+void sendGcode(char gcode[]){
 
-void loop() {
-  // put your main code here, to run repeatedly:
-  /*
-  Wire.beginTransmission(8); // transmit to device #4
-  //Wire.write("M117 Ola ");
-  if(fla){
-    Wire.write("G0 Y50\n"); // sends five bytes
-  }else{
-    Wire.write("G0 Y-50\n"); // sends five bytes
+  Serial.print("[Arduino]: A enviar gcode: ");
+
+  //Start the transmission, send the message to the slave and ends the transmission
+  Wire.beginTransmission(I2CADDRESS);
+  Wire.write(gcode);
+  Wire.endTransmission();
+
+  Serial.println(gcode); 
+
+}
+
+//Checks if the slave (RAMPS) is ready to receive another message or not
+void updateState(){
+  
+  Serial.print("Update: ");
+
+  Wire.requestFrom(I2CADDRESS, 3);
+  int i = 0;
+
+  while(Wire.available()){
+
+    slave_response[i] = Wire.read();
+    i++;    
   }
-  fla = !fla;
-  digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on 
-  delay(500);                       // wait for half a second
-  
-  //Wire.write("G0 Y300"); // sends five bytes
-  //Wire.write(x);              // sends one byte  
-  Wire.endTransmission();    // stop transmitting
-  digitalWrite(LED_BUILTIN, LOW);    // turn the LED off 
-  delay(500);*/
 
-  
-  Serial.println("Write order_gcode number (0-6)"); 
-  delay(1000);
-  delay(1000);
-    
-    //Serial.println(order_gcode);
-    switch  (order_gcode){
+  slave_response[i] = '\0';
+
+  Serial.print("Resposta: ");
+  Serial.println(slave_response);
+}
+
+//Controls the manipulator
+//This function will send the gcode commands by i2c to the Ramps
+int manipulator_control(int &manipulator_state){
+
+  //Check if RAMPS is free to receive a new command
+  updateState();
+
+  //RAMPS is free and send the message
+  if ( strcmp( slave_response, FREE) == 0){
+
+    switch  (manipulator_state){
       case 0:
         gcode = String(SETUP_1);
         break;
@@ -89,6 +114,64 @@ void loop() {
         break;
     }
 
+    //Send the command to RAMPS
+    char char_arr[gcode.length()+1];
+    gcode.toCharArray(char_arr,gcode.length()+1);
+    char_arr[gcode.length()+1] = '\0';
+    sendGcode(char_arr);
+    
+    //Updates the state of the state_machine
+    //WARNING: ALSO NEEDS TO IMPLEMENT THE RESET
+    manipulator_state++;
+  }
+
+  //Returns the current state of the manipulator
+  if (manipulator_state == 1) return MOVING;
+  
+}
+
+
+
+/////////////////////// EXAMPLE TO TEST THE FUNCTIONS CREATED ///////////////////////
+
+void setup() {
+  Serial.begin(115200);
+  
+  gcode_configuration();
+
+  //Wire.begin(I2CADDRESS); // join i2c bus (address optional for master)
+  //Wire.onReceive(receiveEvent);// receive codes from RAMPS
+
+  pinMode(LED_BUILTIN, OUTPUT);
+}
+
+byte x = 0;
+bool flag_first = true;
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  /*
+  Wire.beginTransmission(8); // transmit to device #4
+  //Wire.write("M117 Ola ");
+  if(fla){
+    Wire.write("G0 Y50\n"); // sends five bytes
+  }else{
+    Wire.write("G0 Y-50\n"); // sends five bytes
+  }
+  fla = !fla;
+  digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on 
+  delay(500);                       // wait for half a second
+  
+  //Wire.write("G0 Y300"); // sends five bytes
+  //Wire.write(x);              // sends one byte  
+  Wire.endTransmission();    // stop transmitting
+  digitalWrite(LED_BUILTIN, LOW);    // turn the LED off 
+  delay(500);*/
+
+  
+  Serial.println("Write order_gcode number (0-6)"); 
+  delay(1000);
+  delay(1000);
 
 
 
@@ -112,31 +195,7 @@ void loop() {
     //Serial.println(char_arr);
 }
 
-void updateState(){
-    Serial.println("Update");
-    Wire.requestFrom(I2CADDRESS,1);
-    
-    while(Wire.available()){
-
-      order_gcode = Wire.read();
-      Serial.print("Resposta: ");
-      Serial.println(order_gcode);
-    }
-}
-
-void sendGcode(char gcode[]){
-
-  Serial.print("[Arduino]: A enviar gcode: ");
-  Wire.beginTransmission(I2CADDRESS);
-  Wire.write(gcode);
-
-  Wire.endTransmission();
-
-  Serial.println(gcode); 
-
-}
-
-
+/*
 // -- receber do mestre ramps
 void receiveEvent(int bytes){
   char message[30];
@@ -160,3 +219,4 @@ void receiveEvent(int bytes){
 
   flag_ready_to_send = true;
 }
+*/

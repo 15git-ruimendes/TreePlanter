@@ -35,6 +35,11 @@
 //INCLUDES
 #include <Wire.h> //For I2C communication
 
+//DEFINES
+#define FREE "fre" //RAMPS is free to receive a new command
+#define OCCUPIED "ocp" //RAMPS is occupied to receive a new command
+
+
 //FUNCTIONS
 //Receives the master data by I2C
 //int bytes -> number of bytes received by the master

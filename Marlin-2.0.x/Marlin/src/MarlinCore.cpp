@@ -1743,39 +1743,38 @@ bool i2c_flag = true;
 
 char message[32]; //I2C message string (Wire library has a limit of 32 bytes in a single transmission)
 
-//Este "x" eventualmente ira desaparecer
-int x = 1;
-
 //Informs the master if it's free or not when master ask for this information
 void requestEvent(){
 
-SERIAL_ECHOLN("OLA");
+  SERIAL_ECHO("ASKED IF FREE: ");
 
   //Checks if the last command sent by the master was complete
   //Slave is ready to receive another command and warns the master it's ready
   if (i2c_flag == true){
 
-    //i2c.reply("tes");
+    Wire.write(FREE);
 
-    Wire.write(x);
-    x++;
-    if (x > 6) x = 1;
-    //Wire.write("free");
+    SERIAL_ECHOLN("FREE");
   }
+
+  //Slave not ready yet
   else{
-    //Slave is not ready yet
-    Wire.write("occupied");
+
+    Wire.write(OCCUPIED);
+
+    SERIAL_ECHOLN("NOT FREE");
   }
 }
 
 //Receives the data for the next G-code command
 void receiveEvent(int bytes){
 
-  SERIAL_ECHOLN("RECEBI ! ");
+  SERIAL_ECHO("NEW COMMAND: ");
 
   int i = 0;
 
-  while(Wire.available()) // loop through all but the last
+  //Reads the message char by char and saves in "message"
+  while(Wire.available())
   {
     char c = Wire.read(); // receive byte as a character
 
@@ -1799,6 +1798,7 @@ void receiveEvent(int bytes){
 //that he is free (and in the future will ask for repetition of corrupted messages)
 
 //Sends a Message over I2C communication
+/*
 void send_message(char msg[]){
 
   //Begins, sends and ends the transmission
@@ -1806,7 +1806,7 @@ void send_message(char msg[]){
   Wire.write(msg);
   Wire.endTransmission();
 }
-
+*/
 
 //////////////////////////////////////////////////////////////////
 //                  END OF TEAM F FUNCTIONS                     //
@@ -1850,26 +1850,15 @@ void loop()
 
     //Process the command, and make it the top priority
     queue.inject(message);
-    
     queue.advance();
 
-    //Put flag at true and sends to his "master" (actually, is a slave) that the Ramps is free
+    //Put flag at true and sends to his master that the Ramps is free (when the master asks)
     i2c_flag = true;
-    send_message('free');
 
-    SERIAL_ECHOLN("dentro inject");
-  }
-	      //Teste para ver o estado das endstops
-		//queue.inject("M119");
-		//queue.advance();
-
-      //if(flag_first){
-      //  queue.inject("G0 X100");
-      //  queue.advance();
-      //  flag_first = false;
-      //}
-
+    SERIAL_ECHOLN("COMMAND DONE!");
     
+    //send_message('free');
+  }
     
     endstops.event_handler();
 
