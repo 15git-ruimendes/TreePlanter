@@ -1,6 +1,7 @@
 #include "Arduino.h"
-#include "Wire.h"
-#include "U8glib.h"
+
+#include "LCD_display.h"
+#include "Gcode.h"
 
 #define BUTTON 1
 #define DIST_SENS 2
@@ -14,8 +15,6 @@
 #define MOV_SPEED 100       // movemente speed mm/min
 #define SETUP "G17 G21 G91"
 
-U8GLIB_ST7920_128X64_1X u8g(23, 17, 16);
-
 int drill_X = 0;
 int drill_Y = 0;
 int state = 0;
@@ -28,148 +27,19 @@ int page = 1;
 
 void setup()
 {
+    setup_LCD();
+    setup_Wire();
+
     Serial.begin(9600);
-    Wire.begin();
-    pinMode(41,INPUT);
-    digitalWrite(41,HIGH);
-    pinMode(39,INPUT);
-    digitalWrite(39,HIGH);
-    pinMode(35,INPUT);
-    digitalWrite(35,HIGH);
-    u8g.setColorIndex(1);
+
+    pinMode(41, INPUT);
+    digitalWrite(41, HIGH);
+    pinMode(39, INPUT);
+    digitalWrite(39, HIGH);
+    pinMode(35, INPUT);
+    digitalWrite(35, HIGH);
+
     calibrate_Manipulator();
-}
-
-int send_GCODE(char *buff)
-{
-    Serial.println(buff);
-    Wire.beginTransmission(0x08);
-    Wire.write(buff);
-
-    int success = Wire.endTransmission(true);
-    if (!success)
-        return 1;
-    else
-        return 0;
-}
-
-int receive_Data(char *buff)
-{
-    int c = 0;
-    Wire.requestFrom(0x08, 64);
-
-    c = Wire.read();
-
-    return (c == 5);
-}
-
-void create_Manipulator_GCODE(int x_axis, int y_axis, char *buff)
-{
-    ////free(GCODE);
-    String aux;
-    aux = "G0 X" + String(x_axis) + "Y" + String(y_axis) + " F" + String(MOV_SPEED);
-    GCODE = (char *)malloc(sizeof(char) * (aux.length() + 1));
-    aux.toCharArray(GCODE, aux.length() + 1);
-    GCODE[aux.length() + 1] = '\0';
-}
-
-void create_Magazine_GCODE(char *buff)
-{
-    // free(GCODE);
-    String aux;
-    aux = "G0 Z" + String(MAG_ANGLE) + " F" + String(MOV_SPEED);
-    GCODE = (char *)malloc(sizeof(char) * (aux.length() + 1));
-    aux.toCharArray(GCODE, aux.length() + 1);
-    GCODE[aux.length() + 1] = '\0';
-}
-
-void create_Sweeper_GCODE(int close_Open, char *buff)
-{
-    if (close_Open == 0) // Close
-    {
-        // free(GCODE);
-        String aux;
-        aux = "G0 E" + String(SWEEPER_DISTANCE) + " F" + String(MOV_SPEED);
-        GCODE = (char *)malloc(sizeof(char) * (aux.length() + 1));
-        aux.toCharArray(GCODE, aux.length() + 1);
-        GCODE[aux.length() + 1] = '\0';
-    }
-    else if (close_Open == 1) // Open
-    {
-        // free(GCODE);
-        String aux;
-        aux = "G0 E-" + String(SWEEPER_DISTANCE) + " F" + String(MOV_SPEED);
-        GCODE = (char *)malloc(sizeof(char) * (aux.length() + 1));
-        aux.toCharArray(GCODE, aux.length() + 1);
-        GCODE[aux.length() + 1] = '\0';
-    }
-}
-
-void display_LCD(int page_Number)
-{
-
-    if (page_Number == 1)
-        page_1();
-    else
-        page_2();
-}
-
-void page_1()
-{
-    u8g.setFont(u8g_font_6x10);
-    u8g.drawStr(0, 10, "Tree Planter!");
-    u8g.drawLine(0, 15, 80, 15);
-    u8g.drawLine(80, 0, 80, 64);
-    u8g.setFont(u8g_font_6x10);
-    u8g.drawStr(85, 10, "# Trees");
-    u8g.setFont(u8g_font_6x10);
-    u8g.drawStr(100, 25, "10");
-    u8g.drawFrame(80, 28, 48, 18);
-    u8g.drawStr(81, 40, "Reaload?");
-    u8g.drawBox(80, 46, 48, 18);
-    u8g.setColorIndex(0);
-    u8g.drawStr(87, 55, "Start?");
-    u8g.setColorIndex(1);
-    u8g.setFont(u8g_font_unifont);
-    u8g.drawStr(5, 30, "Waiting");
-    u8g.drawStr(5, 45, "For");
-    u8g.drawStr(5, 60, "Start...");
-}
-
-void page_2()
-{
-    u8g.setFont(u8g_font_6x10);
-    u8g.drawStr(0, 10, "Tree Planter!");
-    u8g.drawLine(0, 15, 80, 15);
-    u8g.drawLine(80, 0, 80, 64);
-    u8g.setFont(u8g_font_6x10);
-    u8g.drawStr(85, 10, "# Trees");
-    u8g.setFont(u8g_font_6x10);
-    u8g.drawStr(100, 25, "10");
-    u8g.drawBox(80, 28, 48, 18);
-    u8g.setColorIndex(0);
-    u8g.drawStr(81, 40, "Reaload?");
-    u8g.setColorIndex(1);
-    u8g.drawFrame(80, 46, 48, 18);
-    u8g.drawStr(87, 55, "Start?");
-    u8g.setFont(u8g_font_unifont);
-    u8g.drawStr(5, 30, "Waiting");
-    u8g.drawStr(5, 45, "For");
-    u8g.drawStr(5, 60, "Start...");
-}
-
-void calibrate_Manipulator()
-{
-    Serial.println("Running Setup Operations!!!");
-    page = 99;
-    state = 100;
-    char setup[14] = "G17 G21 G91 \0";
-    // send_GCODE(SETUP);
-    if (send_GCODE(setup))
-        return;
-    else
-        Serial.println("Error on SetUp Check All Connections");
-    state = 400; // Bad request Error Setup State
 }
 
 void update_Position(int x, int y)
@@ -199,23 +69,18 @@ bool read_Barrier_Sens()
 
 void loop()
 {
-    u8g.firstPage();
-    do
-    {
-        display_LCD(page);
-    } while (u8g.nextPage());
+    display_LCD(page);
 
-    Serial.println(state);
     // Error States
 
     // if (state == 400)
 
-    //Setup States
+    // Setup States
 
     if (state = 100)
     {
-      if (receive_Data(RECV))
-        state = 0;
+        if (receive_Data(RECV))
+            state = 0;
     }
 
     // Action States
@@ -262,8 +127,7 @@ void loop()
     }
     else if (state == 5) // Move. Don't Drill !!
     {
-        page = 2
-        Serial.println("Moving!!");
+        page = 2 Serial.println("Moving!!");
         create_Manipulator_GCODE(0, Y_SIDE + distance + 15, GCODE);
         send_GCODE(GCODE);
         state = 50;
