@@ -5,6 +5,7 @@
 
 #define BUTTON 1
 #define DIST_SENS 2
+
 #define WIDTH 100
 #define HEIGHT 100
 #define X_SIDE 5            // distance from the middle to the side (f)
@@ -40,10 +41,6 @@ void setup()
     digitalWrite(35, HIGH);
 
     calibrate_Manipulator();
-}
-
-void update_Position(int x, int y)
-{
 }
 
 bool get_NumberOfTrees()
