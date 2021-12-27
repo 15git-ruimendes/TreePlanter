@@ -24,11 +24,18 @@ int trees = 2;
 long double distance = 0;
 char *GCODE;
 char *RECV;
+int page = 1;
 
 void setup()
 {
     Serial.begin(9600);
     Wire.begin();
+    pinMode(41,INPUT);
+    digitalWrite(41,HIGH);
+    pinMode(39,INPUT);
+    digitalWrite(39,HIGH);
+    pinMode(35,INPUT);
+    digitalWrite(35,HIGH);
     u8g.setColorIndex(1);
     calibrate_Manipulator();
 }
@@ -100,6 +107,7 @@ void create_Sweeper_GCODE(int close_Open, char *buff)
 
 void display_LCD(int page_Number)
 {
+
     if (page_Number == 1)
         page_1();
     else
@@ -153,15 +161,15 @@ void page_2()
 void calibrate_Manipulator()
 {
     Serial.println("Running Setup Operations!!!");
-    display_LCD(99);
+    page = 99;
+    state = 100;
     char setup[14] = "G17 G21 G91 \0";
-    // char teste[7] = "Hello";
     // send_GCODE(SETUP);
     if (send_GCODE(setup))
         return;
     else
         Serial.println("Error on SetUp Check All Connections");
-    state = 100; // Error Setup State
+    state = 400; // Bad request Error Setup State
 }
 
 void update_Position(int x, int y)
@@ -191,7 +199,6 @@ bool read_Barrier_Sens()
 
 void loop()
 {
-
     u8g.firstPage();
     do
     {
@@ -201,29 +208,35 @@ void loop()
     Serial.println(state);
     // Error States
 
-    // if (state == 100)
+    // if (state == 400)
+
+    //Setup States
+
+    if (state = 100)
+    {
+      if (receive_Data(RECV))
+        state = 0;
+    }
 
     // Action States
 
     if (state == 0) // Read number of trees in machine and maybe ask for clod(torrão) size
     {
-        display_LCD(0);
+        page = 0;
         Serial.println("Please Reload and/or Enter Number of Trees in Magazine");
-        state = 50;
+        state = 70;
         prev_State = 0;
     }
     else if (state == 1) // Wait for start command
     {
-        display_LCD(1);
+        page = 1;
         Serial.println("Waiting for Start Command");
-        create_Sweeper_GCODE(0, GCODE);
-        send_GCODE(GCODE);
-        state = 50;
+        state = 70;
         prev_State = 1;
     }
     else if (state == 2) // Move. Don't Drill !!
     {
-        display_LCD(2);
+        page = 2;
         Serial.println("Moving!!");
         create_Sweeper_GCODE(0, GCODE);
         send_GCODE(GCODE);
@@ -239,7 +252,7 @@ void loop()
     }
     else if (state == 4) // Drill and move
     {
-        display_LCD(3);
+        page = 3;
         Serial.println("Drilling!!");
         create_Manipulator_GCODE(0, distance + 15, GCODE);
         send_GCODE(GCODE);
@@ -249,7 +262,7 @@ void loop()
     }
     else if (state == 5) // Move. Don't Drill !!
     {
-        display_LCD(2);
+        page = 2
         Serial.println("Moving!!");
         create_Manipulator_GCODE(0, Y_SIDE + distance + 15, GCODE);
         send_GCODE(GCODE);
@@ -258,7 +271,7 @@ void loop()
     }
     else if (state == 6) // Place Tree
     {
-        display_LCD(4);
+        page = 4;
         Serial.println("Planting!!");
         create_Magazine_GCODE(GCODE);
         send_GCODE(GCODE);
@@ -267,7 +280,7 @@ void loop()
     }
     else if (state == 7) // Activate sweeper
     {
-        display_LCD(5);
+        page = 5;
         Serial.println("Sweeping!!");
         create_Sweeper_GCODE(0, GCODE);
         send_GCODE(GCODE);
@@ -276,14 +289,15 @@ void loop()
     }
 
     // Transitions
-    if (state == 0 && get_NumberOfTrees())
+    /*if (state == 0 && get_NumberOfTrees())
     {
         state = 1;
-    }
+    }*/
 
     // Waiting States
     // State 50 - Waiting for response from RAMPS
     // State 60 - Waiting for tree drop (10sec) then repeat step
+    // State 70 - Waiting for LCD or Serial Comms
     if (state == 50)
     {
         delay(1000);
