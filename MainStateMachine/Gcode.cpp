@@ -1,12 +1,14 @@
 #include "Gcode.h"
 #include <Arduino.h>
-#include <Wire.h>
+//#include <Wire.h>
 
-#define I2C_ADRESS 8
+#define I2C_ADDRESS 8
+#define FREE "fre"     // the slave (RAMPS) is free to receive another message
+#define OCCUPIED "ocp" // the slave(RAMPS) is occupied and cannot receive another message
 
 void setup_Wire(void)
 {
-    Wire.begin(I2C_ADRESS);
+    Wire.begin(I2C_ADDRESS);
 }
 
 int send_GCODE(char *buff)
@@ -14,7 +16,7 @@ int send_GCODE(char *buff)
     // Serial.print("[Arduino]: A enviar gcode: ");
 
     // Start the transmission, send the message to the slave and ends the transmission
-    Wire.beginTransmission(I2CADDRESS);
+    Wire.beginTransmission(I2C_ADDRESS);
     Wire.write(buff);
     int res = Wire.endTransmission();
 
@@ -22,13 +24,13 @@ int send_GCODE(char *buff)
     // Serial.println(buff);
 }
 
-void updateState()
+bool updateState()
 {
 
     // Serial.print("Update: ");
     char slave_response[4];
 
-    Wire.requestFrom(I2CADDRESS, 3);
+    Wire.requestFrom(I2C_ADDRESS, 3);
     int i = 0;
 
     while (Wire.available())
@@ -153,18 +155,4 @@ void create_Sweeper_GCODE(int close_Open, char *buff)
         aux.toCharArray(GCODE, aux.length() + 1);
         GCODE[aux.length() + 1] = '\0';
     }
-}
-
-void calibrate_Manipulator()
-{
-    Serial.println("Running Setup Operations!!!");
-    page = 99;
-    state = 100;
-    char setup[14] = "G17 G21 G91 \0";
-    // send_GCODE(SETUP);
-    if (send_GCODE(setup))
-        return;
-    else
-        Serial.println("Error on SetUp Check All Connections");
-    state = 400; // Bad request Error Setup State
 }

@@ -18,8 +18,8 @@
 
 int drill_X = 0;
 int drill_Y = 0;
-int state = 0;
-int prev_State = 0;
+int ControllerState = 0;
+int prev_ControllerState = 0;
 int trees = 2;
 long double distance = 0;
 char *GCODE;
@@ -43,10 +43,24 @@ void setup()
     calibrate_Manipulator();
 }
 
+void calibrate_Manipulator()
+{
+    Serial.println("Running Setup Operations!!!");
+    page = 99;
+    ControllerState = 100;
+    char setup[14] = "G17 G21 G91 \0";
+    // send_GCODE(SETUP);
+    if (send_GCODE(setup))
+        return;
+    else
+        Serial.println("Error on SetUp Check All Connections");
+    ControllerState = 400; // Bad request Error Setup ControllerState
+}
+
 bool get_NumberOfTrees()
 {
     trees = 10;
-    return true * (state == 0);
+    return true * (ControllerState == 0);
 }
 
 long double read_Distance()
@@ -68,103 +82,103 @@ void loop()
 {
     display_LCD(page);
 
-    // Error States
+    // Error ControllerStates
 
-    // if (state == 400)
+    // if (ControllerState == 400)
 
-    // Setup States
+    // Setup ControllerStates
 
-    if (state = 100)
+    if (ControllerState = 100)
     {
         if (receive_Data(RECV))
-            state = 0;
+            ControllerState = 0;
     }
 
-    // Action States
+    // Action ControllerStates
 
-    if (state == 0) // Read number of trees in machine and maybe ask for clod(torrão) size
+    if (ControllerState == 0) // Read number of trees in machine and maybe ask for clod(torrão) size
     {
         page = 0;
         Serial.println("Please Reload and/or Enter Number of Trees in Magazine");
-        state = 70;
-        prev_State = 0;
+        ControllerState = 70;
+        prev_ControllerState = 0;
     }
-    else if (state == 1) // Wait for start command
+    else if (ControllerState == 1) // Wait for start command
     {
         page = 1;
         Serial.println("Waiting for Start Command");
-        state = 70;
-        prev_State = 1;
+        ControllerState = 70;
+        prev_ControllerState = 1;
     }
-    else if (state == 2) // Move. Don't Drill !!
+    else if (ControllerState == 2) // Move. Don't Drill !!
     {
         page = 2;
         Serial.println("Moving!!");
         create_Sweeper_GCODE(0, GCODE);
         send_GCODE(GCODE);
-        state = 50;
-        prev_State = 2;
+        ControllerState = 50;
+        prev_ControllerState = 2;
     }
-    else if (state == 3) // Move. Don't Drill !!
+    else if (ControllerState == 3) // Move. Don't Drill !!
     {
         create_Manipulator_GCODE(WIDTH / 2, Y_SIDE + distance - 5, GCODE);
         send_GCODE(GCODE);
-        state = 50;
-        prev_State = 3;
+        ControllerState = 50;
+        prev_ControllerState = 3;
     }
-    else if (state == 4) // Drill and move
+    else if (ControllerState == 4) // Drill and move
     {
         page = 3;
         Serial.println("Drilling!!");
         create_Manipulator_GCODE(0, distance + 15, GCODE);
         send_GCODE(GCODE);
         turn_On_Drill();
-        state = 50;
-        prev_State = 4;
+        ControllerState = 50;
+        prev_ControllerState = 4;
     }
-    else if (state == 5) // Move. Don't Drill !!
+    else if (ControllerState == 5) // Move. Don't Drill !!
     {
         page = 2 Serial.println("Moving!!");
         create_Manipulator_GCODE(0, Y_SIDE + distance + 15, GCODE);
         send_GCODE(GCODE);
-        state = 50;
-        prev_State = 5;
+        ControllerState = 50;
+        prev_ControllerState = 5;
     }
-    else if (state == 6) // Place Tree
+    else if (ControllerState == 6) // Place Tree
     {
         page = 4;
         Serial.println("Planting!!");
         create_Magazine_GCODE(GCODE);
         send_GCODE(GCODE);
-        state = 60;
-        prev_State = 6;
+        ControllerState = 60;
+        prev_ControllerState = 6;
     }
-    else if (state == 7) // Activate sweeper
+    else if (ControllerState == 7) // Activate sweeper
     {
         page = 5;
         Serial.println("Sweeping!!");
         create_Sweeper_GCODE(0, GCODE);
         send_GCODE(GCODE);
-        state = 50;
-        prev_State = 7;
+        ControllerState = 50;
+        prev_ControllerState = 7;
     }
 
     // Transitions
-    /*if (state == 0 && get_NumberOfTrees())
+    /*if (ControllerState == 0 && get_NumberOfTrees())
     {
-        state = 1;
+        ControllerState = 1;
     }*/
 
-    // Waiting States
-    // State 50 - Waiting for response from RAMPS
-    // State 60 - Waiting for tree drop (10sec) then repeat step
-    // State 70 - Waiting for LCD or Serial Comms
-    if (state == 50)
+    // Waiting ControllerStates
+    // ControllerState 50 - Waiting for response from RAMPS
+    // ControllerState 60 - Waiting for tree drop (10sec) then repeat step
+    // ControllerState 70 - Waiting for LCD or Serial Comms
+    if (ControllerState == 50)
     {
         delay(1000);
         if (receive_Data(RECV))
         {
-            state = (prev_State) * (prev_State < 7) + 1 * (trees > 0);
+            ControllerState = (prev_ControllerState) * (prev_ControllerState < 7) + 1 * (trees > 0);
             delay(1000);
         }
         else
@@ -173,12 +187,12 @@ void loop()
             delay(1000);
         }
     }
-    if (state == 60)
+    if (ControllerState == 60)
     {
         if (read_Barrier_Sens())
         {
             trees--;
-            state = ((prev_State) * (prev_State < 7) + 1) * (trees > 0);
+            ControllerState = ((prev_ControllerState) * (prev_ControllerState < 7) + 1) * (trees > 0);
         }
     }
 }
