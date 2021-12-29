@@ -9,8 +9,10 @@
 #define X_OBSTACLE 20 // position to avoid the tree storage on the right
 #define MOV_SPEED 100  // movemente speed mm/min
 
+//Slave messages
 #define FREE "fre" //the slave (RAMPS) is free to receive another message
 #define OCCUPIED "ocp" //the slave(RAMPS) is occupied and cannot receive another message
+#define MESSAGE_SIZE 3 //the size of the message the master is expected to receive
 
 //Manipulator defines
 #define MOVING 1 //Manipulator is moving
@@ -27,9 +29,9 @@
 
 
 //GLOBAL VARIABLES
-char slave_response[4];
+//char slave_response[4];
 
-String gcode;
+//String gcode;
 int order_gcode = 3;
 bool flag_ready_to_send = true;
 
@@ -51,39 +53,45 @@ void sendGcode(char gcode[]){
   Wire.endTransmission();
 
   Serial.println(gcode); 
-
 }
 
 //Checks if the slave (RAMPS) is ready to receive another message or not
-void updateState(){
+void updateState(char *message_received){
   
   Serial.print("Update: ");
 
-  Wire.requestFrom(I2CADDRESS, 3);
+  Wire.requestFrom(I2CADDRESS, MESSAGE_SIZE);
   int i = 0;
 
   while(Wire.available()){
 
-    slave_response[i] = Wire.read();
+    message_received[i] = Wire.read();
     i++;    
   }
 
-  slave_response[i] = '\0';
+  message_received[i] = '\0';
 
-  Serial.print("Resposta: ");
-  Serial.println(slave_response);
+  //Serial.print("Resposta: ");
+  Serial.println(message_received);
 }
 
 //Controls the manipulator
 //This function will send the gcode commands by i2c to the Ramps
 int manipulator_control(int &manipulator_state){
 
+  //Create aux variables
+  char slave_response[MESSAGE_SIZE + 1]; //+1 due to '\0'
+  
   //Check if RAMPS is free to receive a new command
-  updateState();
+  updateState(slave_response);
 
   //RAMPS is free and send the message
   if ( strcmp( slave_response, FREE) == 0){
 
+    //Create string variable
+    String gcode;
+
+    //Checks the message to send
     switch  (manipulator_state){
       case 0:
         gcode = String(SETUP_1);
@@ -114,20 +122,22 @@ int manipulator_control(int &manipulator_state){
         break;
     }
 
-    //Send the command to RAMPS
+    //Convert String to array of chars
     char char_arr[gcode.length()+1];
     gcode.toCharArray(char_arr,gcode.length()+1);
     char_arr[gcode.length()+1] = '\0';
+
+    //Send the command to RAMPS
     sendGcode(char_arr);
     
     //Updates the state of the state_machine
-    //WARNING: ALSO NEEDS TO IMPLEMENT THE RESET
+    //WARNING: ALSO NEEDS TO IMPLEMENT THE RESET (Will depends on the number of states in total)
     manipulator_state++;
   }
 
   //Returns the current state of the manipulator
+  //WARINING: NEED TO ADD THE OTHER STATES
   if (manipulator_state == 1) return MOVING;
-  
 }
 
 
@@ -175,6 +185,8 @@ void loop() {
 
 
 
+
+  String gcode;
 
 
 	//Teste para apenas um comando    
