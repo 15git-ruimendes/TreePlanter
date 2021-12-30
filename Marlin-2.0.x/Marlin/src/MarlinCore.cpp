@@ -1830,6 +1830,7 @@ void send_message(char msg[]){
   char test_str;
   uint8_t nbytes = 100;
   bool flag_first = true;
+  char wait_until_done[5] = "M400";
 
 void loop()
 {
@@ -1851,6 +1852,10 @@ void loop()
     //Process the command, and make it the top priority
     queue.inject(message);
     queue.advance();
+
+    //Waits until all codes are processed
+    // queue.inject("M400");
+    // queue.advance();
 
     //Put flag at true and sends to his master that the Ramps is free (when the master asks)
     i2c_flag = true;

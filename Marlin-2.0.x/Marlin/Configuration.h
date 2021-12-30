@@ -859,6 +859,7 @@
 //#define Y_MIN_ENDSTOP_INVERTING false       // Set to true to invert the logic of the endstop.
 #define X_MIN_ENDSTOP_INVERTING false       // Set to true to invert the logic of the endstop.
 #define Y_MIN_ENDSTOP_INVERTING false       // Set to true to invert the logic of the endstop.
+//tá definido como true para forçar constantemente um "homing" do z 
 #define Z_MIN_ENDSTOP_INVERTING false       // Set to true to invert the logic of the endstop.
 #define I_MIN_ENDSTOP_INVERTING false       // Set to true to invert the logic of the endstop.
 #define J_MIN_ENDSTOP_INVERTING false       // Set to true to invert the logic of the endstop.
@@ -1426,8 +1427,8 @@
 // @section machine
 
 // The size of the printable area
-#define X_BED_SIZE 300//200
-#define Y_BED_SIZE 300//200
+#define X_BED_SIZE 150//200
+#define Y_BED_SIZE 150//200
 
 // Travel limits (mm) after homing, corresponding to endstop positions.
 #define X_MIN_POS 0

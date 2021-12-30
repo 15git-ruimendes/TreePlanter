@@ -153,6 +153,10 @@ void setup() {
 
 byte x = 0;
 bool flag_first = true;
+String gcode;
+char ramps_state[4];
+int limit = 300;
+int state = 0;
 
 void loop() {
   // put your main code here, to run repeatedly:
@@ -173,35 +177,63 @@ void loop() {
   Wire.endTransmission();    // stop transmitting
   digitalWrite(LED_BUILTIN, LOW);    // turn the LED off 
   delay(500);*/
+  
 
+  
   
   Serial.println("Write order_gcode number (0-6)"); 
   delay(1000);
   delay(1000);
 
-  String gcode;
-  char ramps_state[4];
+  
 
-
-	//Teste para apenas um comando    
-	gcode = "G0 X" + String(WIDTH/2)+ " F" + String(MOV_SPEED);
+  switch(state){
+    case 0:
+      gcode = "G28";
+      break;
+    case 1:
+      gcode = "M400";
+      break;
+    case 2:
+      gcode = "G0 Y" + String(limit);
+      break;
+    case 3:
+      gcode = "M211";
+      break;
+    
+  }
 
     //Serial.println(gcode);
     char char_arr[gcode.length()+1];
     gcode.toCharArray(char_arr,gcode.length()+1);
     char_arr[gcode.length()+1] = '\0';
 
-    if(flag_ready_to_send and flag_first){
+   
+    
+
+    /*if(flag_ready_to_send and flag_first){
+      
       sendGcode(char_arr);
       flag_ready_to_send = false;
       flag_first = false;
-    }
+    }*/
 
     updateState(ramps_state);
     Serial.println(ramps_state);
     
     if(strcmp(ramps_state,FREE) == 0 ){
       Serial.println("[Arduino]: O miudo tá disponivel ! ");
+      /*gcode = "M211";
+
+      char char_arr[gcode.length()+1];
+      gcode.toCharArray(char_arr,gcode.length()+1);
+      char_arr[gcode.length()+1] = '\0';*/
+
+      sendGcode(char_arr);
+
+      if(state < 3){
+        state ++;
+      }
     }
     
 }
