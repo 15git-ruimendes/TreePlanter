@@ -191,13 +191,13 @@ void loop() {
     case 0:
       gcode = "G28";
       break;
-    case 1:
+    case 5:
       gcode = "M400";
       break;
-    case 2:
+    case 1:
       gcode = "G0 Y" + String(limit);
       break;
-    case 3:
+    case 2:
       gcode = "M211";
       break;
     
@@ -231,7 +231,8 @@ void loop() {
 
       sendGcode(char_arr);
 
-      if(state < 3){
+
+      if(state < 2){
         state ++;
       }
     }

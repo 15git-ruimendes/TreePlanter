@@ -1854,8 +1854,8 @@ void loop()
     queue.advance();
 
     //Waits until all codes are processed
-    // queue.inject("M400");
-    // queue.advance();
+    queue.inject("M400");
+    queue.advance();
 
     //Put flag at true and sends to his master that the Ramps is free (when the master asks)
     i2c_flag = true;
