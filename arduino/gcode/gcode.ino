@@ -148,7 +148,7 @@ void setup() {
   //Wire.begin(I2CADDRESS); // join i2c bus (address optional for master)
   //Wire.onReceive(receiveEvent);// receive codes from RAMPS
 
-  pinMode(LED_BUILTIN, OUTPUT);
+  //pinMode(LED_BUILTIN, OUTPUT);
 }
 
 byte x = 0;
@@ -179,10 +179,8 @@ void loop() {
   delay(1000);
   delay(1000);
 
-
-
-
   String gcode;
+  char ramps_state[4];
 
 
 	//Teste para apenas um comando    
@@ -198,9 +196,14 @@ void loop() {
       flag_ready_to_send = false;
       flag_first = false;
     }
-      
+
+    updateState(ramps_state);
+    Serial.println(ramps_state);
     
-    //Serial.println(char_arr);
+    if(strcmp(ramps_state,FREE) == 0 ){
+      Serial.println("[Arduino]: O miudo tá disponivel ! ");
+    }
+    
 }
 
 /*
