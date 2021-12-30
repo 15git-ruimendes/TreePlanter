@@ -27,11 +27,6 @@
 #define SETUP_3 "G91"
 #define GO_HOME "G28"
 
-
-//GLOBAL VARIABLES
-//char slave_response[4];
-
-//String gcode;
 int order_gcode = 3;
 bool flag_ready_to_send = true;
 
@@ -103,22 +98,22 @@ int manipulator_control(int &manipulator_state){
         gcode = String(SETUP_3);
         break;
       case 3:
-        gcode = "G0 X" + String(WIDTH/2) + " F" + String(MOV_SPEED);  
+        gcode = "G0 X" + String(WIDTH/2);  
         break;
       case 4:
-        gcode = "G1 Y" + String(HEIGHT) + " F" + String(MOV_SPEED);    
+        gcode = "G1 Y" + String(HEIGHT);    
         break;
       case 5: //Depois de fazer o buraco
-        gcode = "G1 Y-" + String(Y_SIDE) + " F" + String(MOV_SPEED); 
+        gcode = "G1 Y-" + String(Y_SIDE); 
         break;
       case 6:
-        gcode = "G1 X-" + String(X_SIDE) + " F" + String(MOV_SPEED); 
+        gcode = "G1 X-" + String(X_SIDE); 
         break;
       case 7: //Depois de tirar a terra
-        gcode = "G1 X" + String(2*X_SIDE) + " F" + String(MOV_SPEED); 
+        gcode = "G1 X" + String(2*X_SIDE); 
         break;
       case 8:
-        gcode = "G1 Y" + String(HEIGHT-Y_SIDE) + " F" + String(MOV_SPEED); 
+        gcode = "G1 Y" + String(HEIGHT-Y_SIDE); 
         break;
     }
 
@@ -139,6 +134,7 @@ int manipulator_control(int &manipulator_state){
   //WARINING: NEED TO ADD THE OTHER STATES
   if (manipulator_state == 1) return MOVING;
 }
+
 
 
 

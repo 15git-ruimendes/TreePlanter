@@ -116,7 +116,7 @@
  * :[2400, 9600, 19200, 38400, 57600, 115200, 250000, 500000, 1000000]
  */
 #define BAUDRATE 115200
-//#define BAUD_RATE_GCODE     // Enable G-code M575 to set the baud rate
+#define BAUD_RATE_GCODE     // Enable G-code M575 to set the baud rate
 
 /**
  * Select a secondary serial port on the board to use for communication with the host.
@@ -956,11 +956,17 @@
  * Default Axis Steps Per Unit (steps/mm)
  * Override with M92
  *                                      X, Y, Z [, I [, J [, K]]], E0 [, E1[, E2...]]
+ * 
+ * Team F:
+ * 80 steps per mm para 1/16 , se quisermos só 1 step mudamos para 80/16 = 5
+ * 
  */
 #define DEFAULT_AXIS_STEPS_PER_UNIT \
   {                                 \
-    80, 80, 400, 500                \
+    5, 5, 400, 500                \
   }
+  //chegou-se a alterar isto aqui em cim para ver o impacto que tinha
+  //original: 80, 80, 400, 500 
 
 /**
  * Default Max Feed Rate (mm/s)
@@ -1420,8 +1426,8 @@
 // @section machine
 
 // The size of the printable area
-#define X_BED_SIZE 200
-#define Y_BED_SIZE 200
+#define X_BED_SIZE 300//200
+#define Y_BED_SIZE 300//200
 
 // Travel limits (mm) after homing, corresponding to endstop positions.
 #define X_MIN_POS 0
