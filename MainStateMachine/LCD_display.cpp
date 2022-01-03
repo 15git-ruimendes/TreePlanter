@@ -44,8 +44,30 @@ void pick_page(int page)
     }
 }
 
-void page_0()
+// mandar o número de arvores sempre para aqui para se conseguir atualizar sempre
+
+void page_0() // Please Reload and/or Enter Number of Trees in Magazine
 {
+    u8g.setFont(u8g_font_6x10);
+    u8g.drawStr(0, 10, "Tree Planter!");
+    u8g.drawLine(0, 15, 80, 15);
+    u8g.drawLine(80, 0, 80, 64);
+    u8g.setFont(u8g_font_6x10);
+    u8g.drawStr(85, 10, "# Trees");
+    u8g.setFont(u8g_font_6x10);
+    u8g.drawStr(100, 25, "10");
+    u8g.drawFrame(80, 28, 48, 18);
+    u8g.drawStr(81, 40, "Reload?");
+    u8g.drawBox(80, 46, 48, 18);
+    u8g.setColorIndex(0);
+    u8g.drawStr(87, 55, "Start?"); // penso que não será necessário
+    u8g.setColorIndex(1);
+    u8g.setFont(u8g_font_unifont);
+    u8g.drawStr(5, 30, "Enter");
+    u8g.drawStr(5, 45, "The");
+    u8g.drawStr(5, 60, "Number");
+    u8g.drawStr(5, 60, "Of");
+    u8g.drawStr(5, 60, "Trees");
 }
 
 void page_1()
@@ -59,7 +81,7 @@ void page_1()
     u8g.setFont(u8g_font_6x10);
     u8g.drawStr(100, 25, "10");
     u8g.drawFrame(80, 28, 48, 18);
-    u8g.drawStr(81, 40, "Reaload?");
+    u8g.drawStr(81, 40, "Reload?");
     u8g.drawBox(80, 46, 48, 18);
     u8g.setColorIndex(0);
     u8g.drawStr(87, 55, "Start?");
@@ -70,7 +92,7 @@ void page_1()
     u8g.drawStr(5, 60, "Start...");
 }
 
-void page_2()
+void page_2() // moving
 {
     u8g.setFont(u8g_font_6x10);
     u8g.drawStr(0, 10, "Tree Planter!");
@@ -82,28 +104,80 @@ void page_2()
     u8g.drawStr(100, 25, "10");
     u8g.drawBox(80, 28, 48, 18);
     u8g.setColorIndex(0);
-    u8g.drawStr(81, 40, "Reaload?");
+    u8g.drawStr(81, 40, "Reload?");
     u8g.setColorIndex(1);
     u8g.drawFrame(80, 46, 48, 18);
     u8g.drawStr(87, 55, "Start?");
     u8g.setFont(u8g_font_unifont);
-    u8g.drawStr(5, 30, "Waiting");
-    u8g.drawStr(5, 45, "For");
-    u8g.drawStr(5, 60, "Start...");
+    u8g.drawStr(5, 30, "Moving");
+    u8g.drawStr(5, 45, "The");
+    u8g.drawStr(5, 60, "Manipulator");
 }
 
-void page_3()
+void page_3() // drilling
 {
+    u8g.setFont(u8g_font_6x10);
+    u8g.drawStr(0, 10, "Tree Planter!");
+    u8g.drawLine(0, 15, 80, 15);
+    u8g.drawLine(80, 0, 80, 64);
+    u8g.setFont(u8g_font_6x10);
+    u8g.drawStr(85, 10, "# Trees");
+    u8g.setFont(u8g_font_6x10);
+    u8g.drawStr(100, 25, "10");
+    u8g.drawBox(80, 28, 48, 18);
+    u8g.setColorIndex(0);
+    u8g.drawStr(81, 40, "Reload?");
+    u8g.setColorIndex(1);
+    u8g.drawFrame(80, 46, 48, 18);
+    u8g.drawStr(87, 55, "Start?");
+    u8g.setFont(u8g_font_unifont);
+    u8g.drawStr(5, 30, "Drilling");
 }
 
-void page_4()
+void page_4() // Planting
 {
+    u8g.setFont(u8g_font_6x10);
+    u8g.drawStr(0, 10, "Tree Planter!");
+    u8g.drawLine(0, 15, 80, 15);
+    u8g.drawLine(80, 0, 80, 64);
+    u8g.setFont(u8g_font_6x10);
+    u8g.drawStr(85, 10, "# Trees");
+    u8g.setFont(u8g_font_6x10);
+    u8g.drawStr(100, 25, "10");
+    u8g.drawBox(80, 28, 48, 18);
+    u8g.setColorIndex(0);
+    u8g.drawStr(81, 40, "Reload?");
+    u8g.setColorIndex(1);
+    u8g.drawFrame(80, 46, 48, 18);
+    u8g.drawStr(87, 55, "Start?");
+    u8g.setFont(u8g_font_unifont);
+    u8g.drawStr(5, 30, "Planting");
+    u8g.drawStr(5, 45, "The");
+    u8g.drawStr(5, 60, "Tree");
 }
 
-void page_5()
+void page_5() // Sweeping
 {
+    u8g.setFont(u8g_font_6x10);
+    u8g.drawStr(0, 10, "Tree Planter!");
+    u8g.drawLine(0, 15, 80, 15);
+    u8g.drawLine(80, 0, 80, 64);
+    u8g.setFont(u8g_font_6x10);
+    u8g.drawStr(85, 10, "# Trees");
+    u8g.setFont(u8g_font_6x10);
+    u8g.drawStr(100, 25, "10");
+    u8g.drawBox(80, 28, 48, 18);
+    u8g.setColorIndex(0);
+    u8g.drawStr(81, 40, "Reload?");
+    u8g.setColorIndex(1);
+    u8g.drawFrame(80, 46, 48, 18);
+    u8g.drawStr(87, 55, "Start?");
+    u8g.setFont(u8g_font_unifont);
+    u8g.drawStr(5, 30, "Filling");
+    u8g.drawStr(5, 45, "With");
+    u8g.drawStr(5, 60, "Dirt");
 }
 
-void page_100()
+void page_100() // set up
 {
 }

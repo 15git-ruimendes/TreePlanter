@@ -138,7 +138,8 @@ void loop()
     }
     else if (ControllerState == 5) // Move. Don't Drill !!
     {
-        page = 2 Serial.println("Moving!!");
+        page = 2 
+        Serial.println("Moving!!");
         create_Manipulator_GCODE(0, Y_SIDE + distance + 15, GCODE);
         send_GCODE(GCODE);
         ControllerState = 50;
