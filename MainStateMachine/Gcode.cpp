@@ -1,6 +1,6 @@
 #include "Gcode.h"
 #include <Arduino.h>
-//#include <Wire.h>
+#include <Wire.h>
 
 #define I2C_ADDRESS 8
 #define FREE "fre"     // the slave (RAMPS) is free to receive another message

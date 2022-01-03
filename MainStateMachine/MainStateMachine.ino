@@ -31,7 +31,7 @@ void setup()
     setup_LCD();
     setup_Wire();
 
-    Serial.begin(9600);
+    Serial.begin(115200);
 
     pinMode(41, INPUT);
     digitalWrite(41, HIGH);
