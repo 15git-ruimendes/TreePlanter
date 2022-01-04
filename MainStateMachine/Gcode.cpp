@@ -5,6 +5,18 @@
 #define I2C_ADDRESS 8
 #define FREE "fre"     // the slave (RAMPS) is free to receive another message
 #define OCCUPIED "ocp" // the slave(RAMPS) is occupied and cannot receive another message
+#define SETUP_1 "G17"
+#define SETUP_2 "G21"
+#define SETUP_3 "G91"
+#define MOVING 1
+#define WIDTH 100
+#define HEIGHT 100
+#define X_SIDE 5            // distance from the middle to the side (f)
+#define Y_SIDE 30           // distance from the bottom (j)
+#define X_OBSTACLE 20       // position to avoid the tree storage on the right
+#define MAG_ANGLE 60        // Rotate magazine
+#define SWEEPER_DISTANCE 20 // Amount to close sweeper
+#define MOV_SPEED 100       // movemente speed mm/min
 
 void setup_Wire(void)
 {
@@ -42,7 +54,7 @@ bool updateState()
 
     slave_response[i] = '\0';
 
-    return strcmp(slave_response, FREE) == 0
+    return strcmp(slave_response, FREE) == 0;
     // Serial.print("Resposta: ");
     // Serial.println(slave_response);
 }
@@ -93,7 +105,7 @@ int manipulator_control(int &manipulator_state)
         char char_arr[gcode.length() + 1];
         gcode.toCharArray(char_arr, gcode.length() + 1);
         char_arr[gcode.length() + 1] = '\0';
-        send_Gcode(char_arr);
+        send_GCODE(char_arr);
 
         // Updates the state of the state_machine
         // WARNING: ALSO NEEDS TO IMPLEMENT THE RESET
@@ -115,7 +127,7 @@ int manipulator_control(int &manipulator_state)
 //
 //
 
-void create_Manipulator_GCODE(int x_axis, int y_axis, char *buff)
+/*void create_Manipulator_GCODE(int x_axis, int y_axis, char *buff)
 {
     ////free(GCODE);
     String aux;
@@ -155,4 +167,4 @@ void create_Sweeper_GCODE(int close_Open, char *buff)
         aux.toCharArray(GCODE, aux.length() + 1);
         GCODE[aux.length() + 1] = '\0';
     }
-}
+}*/

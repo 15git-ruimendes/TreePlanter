@@ -1,66 +1,38 @@
 #include "Arduino.h"
-
 #include "LCD_display.h"
 #include "Gcode.h"
+#include "U8glib.h"
 
-#define BUTTON 1
 #define DIST_SENS 2
+#define TREE_LIMIT 6
+#define DELAY 250
+#define ENC_BUTTON 18
+#define ENC_RIGHT 2
+#define ENC_LEFT 3
 
-#define WIDTH 100
-#define HEIGHT 100
-#define X_SIDE 5            // distance from the middle to the side (f)
-#define Y_SIDE 30           // distance from the bottom (j)
-#define X_OBSTACLE 20       // position to avoid the tree storage on the right
-#define MAG_ANGLE 60        // Rotate magazine
-#define SWEEPER_DISTANCE 20 // Amount to close sweeper
-#define MOV_SPEED 100       // movemente speed mm/min
-#define SETUP "G17 G21 G91"
-
-int drill_X = 0;
-int drill_Y = 0;
-int ControllerState = 0;
-int prev_ControllerState = 0;
-int trees = 2;
+int trees = 99;
 long double distance = 0;
-char *GCODE;
-char *RECV;
 int page = 1;
+int movement, state = 3, res, top_page = 0, reload = 0;
 
+static unsigned long last_interrupt = 0;
+U8GLIB_ST7920_128X64_1X u8g(23, 17, 16);
+display lcd;
 void setup()
 {
-    setup_LCD();
-    setup_Wire();
 
+    setup_Wire();
+    lcd.setup_LCD(u8g);
     Serial.begin(115200);
 
-    pinMode(41, INPUT);
-    digitalWrite(41, HIGH);
-    pinMode(39, INPUT);
-    digitalWrite(39, HIGH);
-    pinMode(35, INPUT);
-    digitalWrite(35, HIGH);
+    pinMode(ENC_BUTTON, INPUT_PULLUP);
+    attachInterrupt(digitalPinToInterrupt(ENC_BUTTON), click, FALLING);
+    pinMode(ENC_RIGHT, INPUT_PULLUP);
+    attachInterrupt(digitalPinToInterrupt(ENC_RIGHT), right, FALLING);
+    pinMode(ENC_LEFT, INPUT_PULLUP);
+    attachInterrupt(digitalPinToInterrupt(ENC_LEFT), left, FALLING);
 
-    calibrate_Manipulator();
-}
-
-void calibrate_Manipulator()
-{
-    Serial.println("Running Setup Operations!!!");
-    page = 99;
-    ControllerState = 100;
-    char setup[14] = "G17 G21 G91 \0";
-    // send_GCODE(SETUP);
-    if (send_GCODE(setup))
-        return;
-    else
-        Serial.println("Error on SetUp Check All Connections");
-    ControllerState = 400; // Bad request Error Setup ControllerState
-}
-
-bool get_NumberOfTrees()
-{
-    trees = 10;
-    return true * (ControllerState == 0);
+    // while (!calibrate_Manipulator());
 }
 
 long double read_Distance()
@@ -78,11 +50,110 @@ bool read_Barrier_Sens()
     return true;
 }
 
+void click()
+{
+    if (millis() - last_interrupt < DELAY)
+    {
+      last_interrupt = millis();
+      return;
+    }
+    last_interrupt = millis();
+    Serial.println("button");
+    if (state != 3 && top_page == 0)
+        state = 401;
+    else if (state == 3 && top_page)
+    {
+        page = 4; // Reload page
+        reload = 1;
+    }
+    else if (state == 3 && reload && (trees > 0))
+    {
+        page = 1;
+        top_page = 0;
+    }
+    else if (state == 3 && top_page == 0)
+        state = 4;
+}
+void right()
+{
+    if (millis() - last_interrupt < DELAY)
+    {
+        last_interrupt = millis();
+        return;
+    }
+    last_interrupt = millis();
+    Serial.println("right");
+    if (!reload)
+        top_page = 1;
+    else if (reload)
+        trees += (trees < TREE_LIMIT);
+}
+void left()
+{
+    if (millis() - last_interrupt < DELAY)
+    {
+        last_interrupt = millis();
+        return;
+    }
+    last_interrupt = millis();
+    Serial.println("left");
+    if (!reload)
+        top_page = 0;
+    else if (reload)
+        trees -= (trees > 0);
+    
+}
+
 void loop()
 {
-    display_LCD(page);
+    char trees_a[3];
+    trees_a[0] = trees/10 + '0';
+    trees_a[1] = trees%10 + '0';
+    Serial.println(trees_a);
+    Serial.println(top_page);
+     u8g.firstPage();
+    do
+    {
+      lcd.display_LCD(1,u8g,top_page,trees);
+    } while (u8g.nextPage());
+    /*if (state < 3)
+        movement = manipulator_control(state);
+    if (state > 4)
+        movement = manipulator_control(state);*/
 
-    // Error ControllerStates
+    switch (state)
+    {
+    case 0:
+        page = 100;
+        break;
+    case 1:
+        page = 100;
+        break;
+    case 2:
+        page = 100;
+        break;
+    case 3:
+        page = 1;
+        break;
+    case 4:
+        page = 2;
+        break;
+    case 5:
+        page = 3;
+        break;
+    case 6:
+        page = 2;
+        break;
+    case 7:
+        page = 4;
+        break;
+    /*case 8://Sweepers
+        page = 5;*/
+    default:
+        break;
+    }
+
+    /*// Error ControllerStates
 
     // if (ControllerState == 400)
 
@@ -167,7 +238,7 @@ void loop()
     /*if (ControllerState == 0 && get_NumberOfTrees())
     {
         ControllerState = 1;
-    }*/
+    }
 
     // Waiting ControllerStates
     // ControllerState 50 - Waiting for response from RAMPS
@@ -194,5 +265,5 @@ void loop()
             trees--;
             ControllerState = ((prev_ControllerState) * (prev_ControllerState < 7) + 1) * (trees > 0);
         }
-    }
+    }*/
 }
