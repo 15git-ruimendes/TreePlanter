@@ -22,6 +22,7 @@ private:
     void page_7(U8GLIB_ST7920_128X64_1X u8g,int top_page, int num_trees);
     void page_8(U8GLIB_ST7920_128X64_1X u8g,int top_page, int num_trees);
     void page_100(U8GLIB_ST7920_128X64_1X u8g,int top_page, int num_trees);
+    void page_101(U8GLIB_ST7920_128X64_1X u8g,int top_page, int num_trees);
 };
 
 #endif

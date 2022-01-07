@@ -21,7 +21,7 @@
 int trees = 0;
 long double distance = 0;
 int page = 1;
-int movement, state = 3, res, top_page = 0, reload = 0;
+int movement, state = 0, res, top_page = 0, reload = 0;
 static unsigned long last_interrupt = 0;
 
 float speed = 0;
@@ -117,14 +117,14 @@ bool read_Barrier_Sens()
 
 void click()
 {
-    if (millis() - last_interrupt < DELAY)
+    if (millis() - last_interrupt < DELAY) //Debounce
     {
         last_interrupt = millis();
         return;
     }
     last_interrupt = millis();
     Serial.println("button");
-    if (state != 3 && state != 10 && top_page == 0)
+    if (state != 3 && state != 10)
         state = 401;
     else if (state == 3 && top_page)
     {
@@ -140,7 +140,7 @@ void click()
 }
 void right()
 {
-    if (millis() - last_interrupt < DELAY)
+    if (millis() - last_interrupt < DELAY) //Debounce
     {
         last_interrupt = millis();
         return;
@@ -154,7 +154,7 @@ void right()
 }
 void left()
 {
-    if (millis() - last_interrupt < DELAY)
+    if (millis() - last_interrupt < DELAY) //Debounce
     {
         last_interrupt = millis();
         return;
@@ -169,8 +169,7 @@ void left()
 
 void loop()
 {
-    Serial.println(page);
-    Serial.println(state);
+
     u8g.firstPage();
     do
     {
@@ -180,10 +179,18 @@ void loop()
         movement = manipulator_control(state);
     if (state > 4)
         movement = manipulator_control(state);*/
+    if(state == 401)
+      page = 101;
 
     if (state == 3 && trees == 0)
         state = 10;
 
+    if(state >= 0 && state <= 7){
+      delay(1000);
+      Serial.println(state);
+      state++;
+    }
+  
     switch (state)
     {
     case 0: // Calibrate
@@ -210,8 +217,9 @@ void loop()
     case 7: // Drop tree
         page = 4;
         break;
-    /*case 8://Sweepers
-        page = 5;*/
+    case 8://Sweepers
+        page = 5;
+        break;
     case 10: // Reload
         page = 0;
         break;
