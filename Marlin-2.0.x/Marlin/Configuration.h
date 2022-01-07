@@ -964,7 +964,7 @@
  */
 #define DEFAULT_AXIS_STEPS_PER_UNIT \
   {                                 \
-    5, 5, 400, 500                \
+    5.15, 5.15, 400, 500                \
   }
   //chegou-se a alterar isto aqui em cim para ver o impacto que tinha
   //original: 80, 80, 400, 500 
@@ -1427,8 +1427,8 @@
 // @section machine
 
 // The size of the printable area
-#define X_BED_SIZE 150//200
-#define Y_BED_SIZE 150//200
+#define X_BED_SIZE 350//200
+#define Y_BED_SIZE 350//200
 
 // Travel limits (mm) after homing, corresponding to endstop positions.
 #define X_MIN_POS 0

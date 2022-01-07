@@ -2,8 +2,8 @@
 #include <Wire.h>
 
 #define I2CADDRESS 8
-#define WIDTH   100 
-#define HEIGHT  100   
+#define WIDTH   200 
+#define HEIGHT  200   
 #define X_SIDE 5    // distance from the middle to the side (f)
 #define Y_SIDE 30     // distance from the bottom (j)
 #define X_OBSTACLE 20 // position to avoid the tree storage on the right
@@ -27,7 +27,7 @@
 #define SETUP_3 "G91"
 #define GO_HOME "G28"
 
-int order_gcode = 3;
+int order_gcode = 2;
 bool flag_ready_to_send = true;
 
 //RUN THIS ON SETUP
@@ -95,7 +95,7 @@ int manipulator_control(int &manipulator_state){
         gcode = String(SETUP_2);
         break;
       case 2:
-        gcode = String(SETUP_3);
+        gcode = String(GO_HOME);
         break;
       case 3:
         gcode = "G0 X" + String(WIDTH/2);  
@@ -115,6 +115,9 @@ int manipulator_control(int &manipulator_state){
       case 8:
         gcode = "G1 Y" + String(HEIGHT-Y_SIDE); 
         break;
+      default:
+        gcode = "M117 ACABOU";
+        break;
     }
 
     //Convert String to array of chars
@@ -123,12 +126,16 @@ int manipulator_control(int &manipulator_state){
     char_arr[gcode.length()+1] = '\0';
 
     //Send the command to RAMPS
+
     sendGcode(char_arr);
     
     //Updates the state of the state_machine
     //WARNING: ALSO NEEDS TO IMPLEMENT THE RESET (Will depends on the number of states in total)
+    
+    
     manipulator_state++;
   }
+  
 
   //Returns the current state of the manipulator
   //WARINING: NEED TO ADD THE OTHER STATES
@@ -155,7 +162,7 @@ byte x = 0;
 bool flag_first = true;
 String gcode;
 char ramps_state[4];
-int limit = 300;
+int limit = 10;
 int state = 0;
 
 void loop() {
@@ -177,8 +184,10 @@ void loop() {
   Wire.endTransmission();    // stop transmitting
   digitalWrite(LED_BUILTIN, LOW);    // turn the LED off 
   delay(500);*/
-  
 
+  if(order_gcode <9){
+    manipulator_control(order_gcode);
+  }
   
   
   Serial.println("Write order_gcode number (0-6)"); 
@@ -186,7 +195,7 @@ void loop() {
   delay(1000);
 
   
-
+/*
   switch(state){
     case 0:
       gcode = "G28";
@@ -201,7 +210,7 @@ void loop() {
       gcode = "M211";
       break;
     
-  }
+  }*/
 
     //Serial.println(gcode);
     char char_arr[gcode.length()+1];
@@ -228,13 +237,15 @@ void loop() {
       char char_arr[gcode.length()+1];
       gcode.toCharArray(char_arr,gcode.length()+1);
       char_arr[gcode.length()+1] = '\0';*/
+      //if(state == 0){
+        //sendGcode(char_arr);
+        
+      //}
 
-      sendGcode(char_arr);
 
-
-      if(state < 2){
+      //if(state < 2){
         state ++;
-      }
+      //}
     }
     
 }
