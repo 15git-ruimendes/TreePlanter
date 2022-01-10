@@ -21,7 +21,7 @@
 int trees = 0;
 long double distance = 0;
 int page = 1;
-int movement, state = 0, res, top_page = 0, reload = 0;
+int movement, state = 0, res, top_page = 0, reload = 0, prev_state = 1;
 static unsigned long last_interrupt = 0;
 
 float speed = 0;
@@ -117,7 +117,7 @@ bool read_Barrier_Sens()
 
 void click()
 {
-    if (millis() - last_interrupt < DELAY) //Debounce
+    if (millis() - last_interrupt < DELAY) // Debounce
     {
         last_interrupt = millis();
         return;
@@ -140,7 +140,7 @@ void click()
 }
 void right()
 {
-    if (millis() - last_interrupt < DELAY) //Debounce
+    if (millis() - last_interrupt < DELAY) // Debounce
     {
         last_interrupt = millis();
         return;
@@ -154,7 +154,7 @@ void right()
 }
 void left()
 {
-    if (millis() - last_interrupt < DELAY) //Debounce
+    if (millis() - last_interrupt < DELAY) // Debounce
     {
         last_interrupt = millis();
         return;
@@ -175,22 +175,57 @@ void loop()
     {
         lcd.display_LCD(page, u8g, top_page, trees);
     } while (u8g.nextPage());
-    /*if (state < 3)
+
+    if (prev_state != state)
+    {
+        prev_state = state;
+        if (state < 10)
+        {
+            Serial.print("St: 00");
+            Serial.println(state);
+        }
+        else if (state < 100)
+        {
+            Serial.print("St: 0");
+            Serial.println(state);
+        }
+        else
+        {
+            Serial.print("St: ");
+            Serial.println(state);
+        }
+        Serial.print("Tr: 00");
+        Serial.println(trees);
+    }
+    while (Serial.available() > 0)
+    {
+        char res = (char)Serial.read();
+        Serial.print(res);
+        if (state == 3 && res == 'R')
+            state = 10;
+        if ((state == 3 || state == 10) && trees > 0 && res == 'B')
+            state = 4;
+        if (state != 3 && res == 'S')
+            state = 401;
+    }
+
+    if (state < 3)
         movement = manipulator_control(state);
     if (state > 4)
-        movement = manipulator_control(state);*/
-    if(state == 401)
-      page = 101;
+        movement = manipulator_control(state);
+
+    if (state == 401) // infinite tree not found
+        page = 101;
 
     if (state == 3 && trees == 0)
         state = 10;
 
-    if(state >= 0 && state <= 7){
-      delay(1000);
-      Serial.println(state);
-      state++;
+    if (state >= 0 && state <= 7)
+    {
+        delay(1000);
+        state++;
     }
-  
+
     switch (state)
     {
     case 0: // Calibrate
@@ -217,7 +252,7 @@ void loop()
     case 7: // Drop tree
         page = 4;
         break;
-    case 8://Sweepers
+    case 8: // Sweepers
         page = 5;
         break;
     case 10: // Reload
