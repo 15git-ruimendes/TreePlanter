@@ -9,6 +9,7 @@
 #define DELAY 250
 
 #define DIST_SENS 2
+#define BARRIER A0
 
 #define ENC_BUTTON 18
 #define ENC_RIGHT 2
@@ -18,11 +19,12 @@
 #define DRILL_PWM1 5
 #define DRILL_PWM2 6
 
-int trees = 0;
+
+int trees = 0,tree_dropped = 0;
 long double distance = 0;
 int page = 1;
 int movement, state = 0, res, top_page = 0, reload = 0, prev_state = 1;
-static unsigned long last_interrupt = 0;
+static unsigned long last_interrupt = 0,prev_time = 0;
 
 float speed = 0;
 static TB9051FTGMotorCarrier driver{DRILL_PWM1, DRILL_PWM2};
@@ -112,7 +114,20 @@ void turn_Drill(int on)
 
 bool read_Barrier_Sens()
 {
-    return true;
+    if (analogRead(BARRIER) > 0){
+      return false;
+    }
+    else if(analogRead(BARRIER) == 0){
+      if(millis() - prev_time > 10){
+        prev_time = millis();
+        Serial.println("Droped");
+        return true; 
+      }
+      else {
+        prev_time = millis();
+        return false;
+      }
+    }
 }
 
 void click()
@@ -207,6 +222,10 @@ void loop()
             state = 4;
         if (state != 3 && res == 'S')
             state = 401;
+        else if(state == 3 || state == 10){
+            trees = (int)res - 48;
+            Serial.println(trees);
+        }
     }
 
     if (state < 3)
