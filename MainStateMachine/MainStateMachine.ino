@@ -1,12 +1,17 @@
 #include <TB9051FTGMotorCarrier.h>
 
+#include "Servo.h"
 #include "Arduino.h"
 #include "LCD_display.h"
 #include "Gcode.h"
 #include "U8glib.h"
+#include <SharpIR.h>
 
 #define TREE_LIMIT 6
+#define TREE_DELAY 5000
 #define DELAY 250
+
+#define BUZZERPIN 7
 
 #define DIST_SENS 2
 #define BARRIER A0
@@ -19,19 +24,22 @@
 #define DRILL_PWM1 5
 #define DRILL_PWM2 6
 
+#define ServoPin 9
 
-int trees = 0,tree_dropped = 0;
+int trees = 0, tree_dropped = 0;
 long double distance = 0;
 int page = 1;
 int movement, state = 0, res, top_page = 0, reload = 0, prev_state = 1;
-static unsigned long last_interrupt = 0,prev_time = 0;
+static unsigned long last_interrupt = 0, prev_time = 0,treeWait = 0;
 
 float speed = 0;
 static TB9051FTGMotorCarrier driver{DRILL_PWM1, DRILL_PWM2};
 U8GLIB_ST7920_128X64_1X u8g(23, 17, 16);
 display lcd;
+Servo treeDrop;
 void setup()
-{
+{  
+    treeDrop.attach(ServoPin);
     driver.enable();
     setup_Wire();
     lcd.setup_LCD(u8g);
@@ -114,19 +122,23 @@ void turn_Drill(int on)
 
 bool read_Barrier_Sens()
 {
-    if (analogRead(BARRIER) > 0){
-      return false;
-    }
-    else if(analogRead(BARRIER) == 0){
-      if(millis() - prev_time > 10){
-        prev_time = millis();
-        Serial.println("Droped");
-        return true; 
-      }
-      else {
-        prev_time = millis();
+    if (analogRead(BARRIER) > 0)
+    {
         return false;
-      }
+    }
+    else if (analogRead(BARRIER) == 0)
+    {
+        if (millis() - prev_time > 10)
+        {
+            prev_time = millis();
+            Serial.println("Droped");
+            return true;
+        }
+        else
+        {
+            prev_time = millis();
+            return false;
+        }
     }
 }
 
@@ -185,12 +197,16 @@ void left()
 void loop()
 {
 
+    bool treeDrop = read_Barrier_Sens();
+
+    //LCD functions
     u8g.firstPage();
     do
     {
         lcd.display_LCD(page, u8g, top_page, trees);
     } while (u8g.nextPage());
 
+    //Serial Communications Functions
     if (prev_state != state)
     {
         prev_state = state;
@@ -222,23 +238,33 @@ void loop()
             state = 4;
         if (state != 3 && res == 'S')
             state = 401;
-        else if(state == 3 || state == 10){
+        else if (state == 3 || state == 10)
+        {
             trees = (int)res - 48;
             Serial.println(trees);
         }
     }
 
+    //States to Stop Manipulator Movement
     if (state < 3)
         movement = manipulator_control(state);
     if (state > 4)
         movement = manipulator_control(state);
 
+    //Error State
     if (state == 401) // infinite tree not found
         page = 101;
 
+    if (state == 7 && millis() - treeWait > TREE_DELAY){
+      treeDrop.write(45);
+      treeWait = millis();
+    }
+
+    //Reload State
     if (state == 3 && trees == 0)
         state = 10;
 
+    //Testing
     if (state >= 0 && state <= 7)
     {
         delay(1000);
@@ -258,6 +284,7 @@ void loop()
         break;
     case 3: // Waiting for start
         page = 1;
+        distance = read_Distance();
         break;
     case 4: // Moving drill
         page = 2;
@@ -269,6 +296,12 @@ void loop()
         page = 2;
         break;
     case 7: // Drop tree
+        if (treeDrop)
+        {
+            trees--;
+            // Stop Servo
+            // Continue Machine State
+        }
         page = 4;
         break;
     case 8: // Sweepers
