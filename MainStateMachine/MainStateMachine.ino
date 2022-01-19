@@ -13,7 +13,8 @@
 
 #define BUZZERPIN 7
 
-#define DIST_SENS 2
+#define DIST_SENS A1
+#define DIST_SENS_MODEL 1080
 #define BARRIER A0
 
 #define ENC_BUTTON 18
@@ -25,6 +26,9 @@
 #define DRILL_PWM2 6
 
 #define ServoPin 9
+
+
+SharpIR detect(DIST_SENS, DIST_SENS_MODEL);
 
 int trees = 0, tree_dropped = 0;
 long double distance = 0;
@@ -57,8 +61,7 @@ void setup()
 
 long double read_Distance()
 {
-    long double preVal = analogRead(DIST_SENS);
-    return 29.998 * pow(preVal, -1.173);
+    return detect.distance();
 }
 
 void turn_Drill(int on)
