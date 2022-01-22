@@ -39,7 +39,7 @@ void updateState(char *message_received){
 ////ADICIONAR RETURN PARA ESTA SITUAÇÃO
 //Controls the manipulator
 //This function will send the gcode commands by i2c to the Ramps
-int manipulator_control(int &manipulator_state){
+int manipulator_control(int &manipulator_state, int distance_to_ground){
 
   //Create aux variables
   char slave_response[MESSAGE_SIZE + 1]; //+1 due to '\0'
@@ -52,6 +52,8 @@ int manipulator_control(int &manipulator_state){
 
     //Create string variable
     String gcode;
+
+    int distance_to_travel = distance_to_ground - 100;
 
     //Checks the message to send
     switch  (manipulator_state){
@@ -68,19 +70,38 @@ int manipulator_control(int &manipulator_state){
         gcode = "G0 X" + String(WIDTH/2);  
         break;
       case 4:
-        gcode = "G1 Y" + String(HEIGHT);    
+        gcode = "G1 Y" + String(distance_to_travel);
         break;
-      case 5: //Depois de fazer o buraco
-        gcode = "G1 Y-" + String(Y_SIDE); 
+      case 5:
+        //Do nothing, just to wait untill it's done and ready to turn on the drill
         break;
       case 6:
+        gcode = "G1 Y" + String(HOLE_HEIGHT);
+        break;
+      case 7:
+        //Do nothing, just to wait the hole to be drilled
+        break;
+      //VERIFICAR se chega pro buraco
+      case 8: //Depois de fazer o buraco
+        gcode = "G1 Y-" + String(HOLE_HEIGHT);//Y_SIDE); 
+        break;
+      case 9:
         gcode = "G1 X-" + String(X_SIDE); 
         break;
-      case 7: //Depois de tirar a terra
-        gcode = "G1 X" + String(2*X_SIDE); 
+      case 10:
+        //Do nothing, just to wait for the drill go to the place for dirt be dropped
+        break;   
+      case 11: //Depois de tirar a terra
+        gcode = "G1 X" + String(2*X_SIDE);
         break;
-      case 8:
-        gcode = "G1 Y" + String(HEIGHT-Y_SIDE); 
+      case 12:
+        //Do nothing, just to wait for the drill go to the place for dirt be dropped on the other side
+        break;      
+      case 13:
+        gcode = "G1 Y" + String(distance_to_travel);//HEIGHT-Y_SIDE); 
+        break;
+      case 14:
+        //Do nothing, just to wait for the manipulator to reach the highest position
         break;
       default:
         gcode = "M117 ACABOU";
@@ -97,14 +118,19 @@ int manipulator_control(int &manipulator_state){
     
     //Updates the state of the state_machine
     //WARNING: ALSO NEEDS TO IMPLEMENT THE RESET (Will depends on the number of states in total)
-    if (manipulator_state == 9){ manipulator_state = 0; }
+    if (manipulator_state == 15){ manipulator_state = 0; return DONE;}
     else{ manipulator_state++; }
   }
   
   //Returns the current state of the manipulator
   //WARINING: NEED TO ADD THE OTHER STATES
-  if (manipulator_state == 1) return MOVING;
-  if (manipulator_state == 9) return DONE;
+  if ( (manipulator_state == 1) || (manipulator_state == 2) || (manipulator_state == 3) || (manipulator_state == 4) ||  (manipulator_state == 5) ) return MOVING;
+  if ( (manipulator_state == 6) || (manipulator_state == 7) ) return PERFURATING;
+  if ( (manipulator_state == 8) || (manipulator_state == 9) || (manipulator_state == 10) ) return LIFTING;
+  if ( (manipulator_state == 11) ) return SOIL;
+  if ( (manipulator_state == 12) ) return MOVING;
+  if ( (manipulator_state == 13) ) return SOIL;
+  if ( (manipulator_state == 14) ) return MOVING;
 }
 
 //Controls the sweeper the drag the dirt back to the hole

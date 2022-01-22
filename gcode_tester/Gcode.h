@@ -10,6 +10,7 @@
 #define I2CADDRESS 8
 #define WIDTH   200 
 #define HEIGHT  200   
+#define HOLE_HEIGHT 200
 #define X_SIDE 5    // distance from the middle to the side (f)
 #define Y_SIDE 30     // distance from the bottom (j)
 #define X_OBSTACLE 20 // position to avoid the tree storage on the right
@@ -55,6 +56,7 @@ void updateState(char *message_received);
 //Controls the manipulator
 //This function will send the gcode commands by i2c to the Ramps
 //int &manipulator_state internal state machine of manipulator control. This variable is auto-updated by this machine itself.
+//int distance_to_ground distance from the lower part of the drill to the ground (in mm)
 //In case of a restart needed, set manipulator_state to zero
 //Return integer specifying the state of the manipulator, that being:
 //MOVING 1 -> Manipulator is moving
@@ -62,7 +64,7 @@ void updateState(char *message_received);
 //LIFTING 3 -> Manipulator is ready to, or lifting after the perfuration
 //SOIL 4 -> Manipulator is ready to, or dropping the soil
 //DONE 5 -> Manipulator is done
-int manipulator_control(int &manipulator_state);
+int manipulator_control(int &manipulator_state, int distance_to_ground);
 
 
 //Controls the sweeper the drag the dirt back to the hole

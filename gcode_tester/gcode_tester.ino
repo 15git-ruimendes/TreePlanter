@@ -175,7 +175,7 @@ void loop() {
 
   delay(2000);
 
-  returns = manipulator_control(manipulator_state);
+  returns = manipulator_control(manipulator_state, 20);
 
   Serial.print("Manipulator state: ");
   Serial.println(manipulator_state);
