@@ -28,6 +28,8 @@
  *  - https://github.com/grbl/grbl
  */
 
+#include "core/serial.h"
+
 #include "MarlinCore.h"
 
 #include "HAL/shared/Delay.h"
@@ -1186,6 +1188,22 @@ inline void tmc_standby_setup()
  */
 void setup()
 {
+
+//////////////////////////////////////////////////////////////////
+//                 TEAM F SETUP CONFIGURATION                   //
+//////////////////////////////////////////////////////////////////
+
+  //I2C setup configuration
+  Wire.begin(8);
+  Wire.onReceive(receiveEvent);
+  Wire.onRequest(requestEvent);
+
+
+//////////////////////////////////////////////////////////////////
+//               END OF TEAM F SETUP CONFIGURATION              //
+//////////////////////////////////////////////////////////////////
+
+
 #ifdef FASTIO_INIT
   FASTIO_INIT();
 #endif
@@ -1713,6 +1731,89 @@ void setup()
   SETUP_LOG("setup() completed.");
 }
 
+//////////////////////////////////////////////////////////////////
+//                      TEAM F FUNCTIONS                        //
+//////////////////////////////////////////////////////////////////
+
+//GLOBAL VARIABLES
+//Checks if the received G-code task was completed and is ready to receive the new command from master
+// true -> slave is ready to receive another command
+// false -> slave is still processing the command and is not ready to receive another one
+bool i2c_flag = true;
+
+char message[32]; //I2C message string (Wire library has a limit of 32 bytes in a single transmission)
+
+//Informs the master if it's free or not when master ask for this information
+void requestEvent(){
+
+  SERIAL_ECHO("ASKED IF FREE: ");
+
+  //Checks if the last command sent by the master was complete
+  //Slave is ready to receive another command and warns the master it's ready
+  if (i2c_flag == true){
+
+    Wire.write(FREE);
+
+    SERIAL_ECHOLN("FREE");
+  }
+
+  //Slave not ready yet
+  else{
+
+    Wire.write(OCCUPIED);
+
+    SERIAL_ECHOLN("NOT FREE");
+  }
+}
+
+//Receives the data for the next G-code command
+void receiveEvent(int bytes){
+
+  SERIAL_ECHO("NEW COMMAND: ");
+
+  int i = 0;
+
+  //Reads the message char by char and saves in "message"
+  while(Wire.available())
+  {
+    char c = Wire.read(); // receive byte as a character
+
+    message[i] = c;
+    i++;
+  }
+  message[i] = '\0';
+  
+  SERIAL_ECHOLN(message);
+  
+  //Warns the master that slave will be occupied in case of a master request
+  i2c_flag = false;
+}
+
+
+/////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
+//Functions to be used if Ramps being only a slave doesn't work
+//It consists in assuming that the Ramps can also be a Master to send to the Arduino (the true Master)
+//that he is free (and in the future will ask for repetition of corrupted messages)
+
+//Sends a Message over I2C communication
+/*
+void send_message(char msg[]){
+
+  //Begins, sends and ends the transmission
+  Wire.beginTransmission(8);
+  Wire.write(msg);
+  Wire.endTransmission();
+}
+*/
+
+//////////////////////////////////////////////////////////////////
+//                  END OF TEAM F FUNCTIONS                     //
+//////////////////////////////////////////////////////////////////
+
+
+
 /**
  * The main Marlin program loop
  *
@@ -1726,12 +1827,17 @@ void setup()
  *    card, host, or by direct injection. The queue will continue to fill
  *    as long as idle() or manage_inactivity() are being called.
  */
+  char test_str;
+  uint8_t nbytes = 100;
+  bool flag_first = true;
+  char wait_until_done[5] = "M400";
 
 void loop()
 {
   do
   {
     idle();
+
 
 #if ENABLED(SDSUPPORT)
     if (card.flag.abort_sd_printing)
@@ -1740,11 +1846,29 @@ void loop()
       finishSDPrinting();
 #endif
     
+  //Received a new command and will process it
+  if (i2c_flag == false){
+
+    //Process the command, and make it the top priority
+    queue.inject(message);
     queue.advance();
-    queue.inject("M117 Trees Left: 100 000");
+
+    //Waits until all codes are processed
+    queue.inject("M400");
+    queue.advance();
+
+    //Put flag at true and sends to his master that the Ramps is free (when the master asks)
+    i2c_flag = true;
+
+    SERIAL_ECHOLN("COMMAND DONE!");
+    
+    //send_message('free');
+  }
+    
     endstops.event_handler();
 
     TERN_(HAS_TFT_LVGL_UI, printer_state_polling());
 
   } while (ENABLED(__AVR__)); // Loop forever on slower (AVR) boards
+
 }

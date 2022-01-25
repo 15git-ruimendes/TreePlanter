@@ -115,8 +115,8 @@
  *
  * :[2400, 9600, 19200, 38400, 57600, 115200, 250000, 500000, 1000000]
  */
-#define BAUDRATE 250000
-//#define BAUD_RATE_GCODE     // Enable G-code M575 to set the baud rate
+#define BAUDRATE 115200
+#define BAUD_RATE_GCODE     // Enable G-code M575 to set the baud rate
 
 /**
  * Select a secondary serial port on the board to use for communication with the host.
@@ -776,7 +776,7 @@
 
 // Enable one of the options below for CoreXY, CoreXZ, or CoreYZ kinematics,
 // either in the usual order or reversed
-//#define COREXY
+#define COREXY
 //#define COREXZ
 //#define COREYZ
 //#define COREYX
@@ -855,12 +855,17 @@
 #endif
 
 // Mechanical endstop with COM to ground and NC to Signal uses "false" here (most common setup).
+//#define X_MIN_ENDSTOP_INVERTING false       // Set to true to invert the logic of the endstop.
+//#define Y_MIN_ENDSTOP_INVERTING false       // Set to true to invert the logic of the endstop.
 #define X_MIN_ENDSTOP_INVERTING false       // Set to true to invert the logic of the endstop.
 #define Y_MIN_ENDSTOP_INVERTING false       // Set to true to invert the logic of the endstop.
+//tá definido como true para forçar constantemente um "homing" do z 
 #define Z_MIN_ENDSTOP_INVERTING false       // Set to true to invert the logic of the endstop.
 #define I_MIN_ENDSTOP_INVERTING false       // Set to true to invert the logic of the endstop.
 #define J_MIN_ENDSTOP_INVERTING false       // Set to true to invert the logic of the endstop.
 #define K_MIN_ENDSTOP_INVERTING false       // Set to true to invert the logic of the endstop.
+// #define X_MAX_ENDSTOP_INVERTING false       // Set to true to invert the logic of the endstop.
+// #define Y_MAX_ENDSTOP_INVERTING false       // Set to true to invert the logic of the endstop.
 #define X_MAX_ENDSTOP_INVERTING false       // Set to true to invert the logic of the endstop.
 #define Y_MAX_ENDSTOP_INVERTING false       // Set to true to invert the logic of the endstop.
 #define Z_MAX_ENDSTOP_INVERTING false       // Set to true to invert the logic of the endstop.
@@ -899,7 +904,7 @@
 //#define J_DRIVER_TYPE  A4988
 //#define K_DRIVER_TYPE  A4988
 #define E0_DRIVER_TYPE A4988
-//#define E1_DRIVER_TYPE A4988
+#define E1_DRIVER_TYPE A4988
 //#define E2_DRIVER_TYPE A4988
 //#define E3_DRIVER_TYPE A4988
 //#define E4_DRIVER_TYPE A4988
@@ -952,11 +957,17 @@
  * Default Axis Steps Per Unit (steps/mm)
  * Override with M92
  *                                      X, Y, Z [, I [, J [, K]]], E0 [, E1[, E2...]]
+ * 
+ * Team F:
+ * 80 steps per mm para 1/16 , se quisermos só 1 step mudamos para 80/16 = 5
+ * 
  */
 #define DEFAULT_AXIS_STEPS_PER_UNIT \
   {                                 \
-    80, 80, 400, 500                \
+    5.15, 5.15, 400, 500                \
   }
+  //chegou-se a alterar isto aqui em cim para ver o impacto que tinha
+  //original: 80, 80, 400, 500 
 
 /**
  * Default Max Feed Rate (mm/s)
@@ -1416,8 +1427,8 @@
 // @section machine
 
 // The size of the printable area
-#define X_BED_SIZE 200
-#define Y_BED_SIZE 200
+#define X_BED_SIZE 350//200
+#define Y_BED_SIZE 350//200
 
 // Travel limits (mm) after homing, corresponding to endstop positions.
 #define X_MIN_POS 0

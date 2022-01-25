@@ -252,7 +252,7 @@ void GCodeQueue::RingBuffer::ok_to_send() {
     PORT_REDIRECT(SERIAL_PORTMASK(serial_ind));   // Reply to the serial port that sent the command
   #endif
   if (command.skip_ok) return;
-  SERIAL_ECHOPGM(STR_OK);
+  //SERIAL_ECHOPGM(STR_OK);
   #if ENABLED(ADVANCED_OK)
     char* p = command.buffer;
     if (*p == 'N') {
@@ -262,7 +262,7 @@ void GCodeQueue::RingBuffer::ok_to_send() {
     }
     SERIAL_ECHOPGM_P(SP_P_STR, planner.moves_free(), SP_B_STR, BUFSIZE - length);
   #endif
-  SERIAL_EOL();
+  //SERIAL_EOL();
 }
 
 /**
