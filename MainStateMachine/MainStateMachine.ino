@@ -8,7 +8,7 @@
 #include <SharpIR.h>
 
 #define TREE_LIMIT 6
-#define TREE_DELAY 5000
+#define TREE_DELAY 1000
 #define DELAY 250
 
 #define BUZZERPIN 7
@@ -30,7 +30,7 @@
 
 SharpIR detect(DIST_SENS, DIST_SENS_MODEL);
 
-int trees = 0, tree_dropped = 0;
+int trees = 0, tree_dropped = 0,pos = 0;
 long double distance = 0;
 int page = 1;
 int movement, state = 0, res, top_page = 0, reload = 0, prev_state = 1;
@@ -61,7 +61,7 @@ void setup()
 
 long double read_Distance()
 {
-    return detect.distance();
+    return detect.getDistance();
 }
 
 void turn_Drill(int on)
@@ -125,7 +125,7 @@ void turn_Drill(int on)
 
 bool read_Barrier_Sens()
 {
-    if (analogRead(BARRIER) > 0)
+    if (analogRead(BARRIER) > 10)
     {
         return false;
     }
@@ -133,7 +133,6 @@ bool read_Barrier_Sens()
     {
         if (millis() - prev_time > 10)
         {
-            prev_time = millis();
             Serial.println("Droped");
             return true;
         }
@@ -200,8 +199,7 @@ void left()
 void loop()
 {
 
-    bool treeDrop = read_Barrier_Sens();
-
+    bool treeDropSens = read_Barrier_Sens();
     //LCD functions
     u8g.firstPage();
     do
@@ -258,8 +256,13 @@ void loop()
     if (state == 401) // infinite tree not found
         page = 101;
 
-    if (state == 7 && millis() - treeWait > TREE_DELAY){
-      treeDrop.write(45);
+    if (state == 7 && (millis() - treeWait > TREE_DELAY)){
+      pos+=45;
+      if (pos > 360)
+        pos = 0;
+      treeDrop.write(pos);
+      Serial.println(pos);
+      delay(100);
       treeWait = millis();
     }
 
@@ -268,7 +271,7 @@ void loop()
         state = 10;
 
     //Testing
-    if (state >= 0 && state <= 7)
+    if (state >= 0 && state <= 6)
     {
         delay(1000);
         state++;
@@ -299,9 +302,10 @@ void loop()
         page = 2;
         break;
     case 7: // Drop tree
-        if (treeDrop)
+        if (treeDropSens)
         {
             trees--;
+            state++;
             // Stop Servo
             // Continue Machine State
         }
