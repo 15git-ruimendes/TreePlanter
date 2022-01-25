@@ -3,7 +3,7 @@
 #include "Servo.h"
 #include "Arduino.h"
 #include "LCD_display.h"
-#include "Gcode.h"
+#include "arduino/gcode/Gcode.h"
 #include "U8glib.h"
 #include <SharpIR.h>
 
@@ -27,14 +27,13 @@
 
 #define ServoPin 9
 
-
 SharpIR detect(DIST_SENS, DIST_SENS_MODEL);
 
-int trees = 0, tree_dropped = 0,pos = 0;
+int trees = 0, tree_dropped = 0, pos = 0;
 long double distance = 0;
 int page = 1;
-int movement, state = 0, res, top_page = 0, reload = 0, prev_state = 1;
-static unsigned long last_interrupt = 0, prev_time = 0,treeWait = 0;
+int movement, manipulator_state = 0, state = 0, res, top_page = 0, reload = 0, prev_state = 1;
+static unsigned long last_interrupt = 0, prev_time = 0, treeWait = 0;
 
 float speed = 0;
 static TB9051FTGMotorCarrier driver{DRILL_PWM1, DRILL_PWM2};
@@ -42,7 +41,7 @@ U8GLIB_ST7920_128X64_1X u8g(23, 17, 16);
 display lcd;
 Servo treeDrop;
 void setup()
-{  
+{
     treeDrop.attach(ServoPin);
     driver.enable();
     setup_Wire();
@@ -200,14 +199,15 @@ void loop()
 {
 
     bool treeDropSens = read_Barrier_Sens();
-    //LCD functions
+
+    // LCD functions
     u8g.firstPage();
     do
     {
         lcd.display_LCD(page, u8g, top_page, trees);
     } while (u8g.nextPage());
 
-    //Serial Communications Functions
+    // Serial Communications Functions
     if (prev_state != state)
     {
         prev_state = state;
@@ -246,36 +246,68 @@ void loop()
         }
     }
 
-    //States to Stop Manipulator Movement
-    if (state < 3)
-        movement = manipulator_control(state);
-    if (state > 4)
-        movement = manipulator_control(state);
+    // States to Stop Manipulator Movement
+    if (state < 3 && manipulator_state < 3)
+    {
+        manipulator_control(manipulator_state, int(distance));
+        state = manipulator_state;
+    }
+    if (state > 4 && state != 7)
+    {
+        manipulator_control(manipulator_state, int(distance));
+        switch (manipulator_state)
+        {
+        case 3:
+            state = 4;
+            break;
+        case 4:
+            state = 4;
+            break;
+        case 5:
+            state = 5;
+            break;
+        case 6:
+            state = 6;
+            break;
+        case 7:
+            state = 7;
+            break;
+        default:
+            break;
+        }
+    }
+    // Recicle State
+    if (state == 8 && manipulator_control(manipulator_state, int(distance)) == DONE)
+    {
+        manipulator_state = 3;
+        state = 3;
+    }
 
-    //Error State
+    // Error State
     if (state == 401) // infinite tree not found
         page = 101;
 
-    if (state == 7 && (millis() - treeWait > TREE_DELAY)){
-      pos+=45;
-      if (pos > 360)
-        pos = 0;
-      treeDrop.write(pos);
-      Serial.println(pos);
-      delay(100);
-      treeWait = millis();
+    // Retry to deploy a tree from the magazine if tree is not detected within TREE_DELAY ms
+    if (state == 7 && (millis() - treeWait > TREE_DELAY))
+    {
+        pos += 45;
+        if (pos > 360)
+            pos = 0;
+        treeDrop.write(pos);
+        delay(100);
+        treeWait = millis();
     }
 
-    //Reload State
+    // Reload State
     if (state == 3 && trees == 0)
         state = 10;
 
-    //Testing
-    if (state >= 0 && state <= 6)
+    // Testing
+    /*if (state >= 0 && state <= 6)
     {
         delay(1000);
         state++;
-    }
+    }*/
 
     switch (state)
     {
@@ -296,22 +328,28 @@ void loop()
         page = 2;
         break;
     case 5: // Drilling
+        turn_Drill(1);
         page = 3;
         break;
     case 6: // Moving Drill
+        turn_Drill(-1);
         page = 2;
         break;
     case 7: // Drop tree
+        turn_Drill(0);
         if (treeDropSens)
         {
             trees--;
             state++;
             // Stop Servo
             // Continue Machine State
+            // Comment this line when sweepers are built and
+            // system to drop dirt is built
+            manipulator_state = 9;
         }
         page = 4;
         break;
-    case 8: // Sweepers
+    case 8: // Sweepers (not built)
         page = 5;
         break;
     case 10: // Reload
@@ -320,119 +358,4 @@ void loop()
     default:
         break;
     }
-
-    /*// Error ControllerStates
-
-    // if (ControllerState == 400)
-
-    // Setup ControllerStates
-
-    if (ControllerState = 100)
-    {
-        if (receive_Data(RECV))
-            ControllerState = 0;
-    }
-
-    // Action ControllerStates
-
-    if (ControllerState == 0) // Read number of trees in machine and maybe ask for clod(torrão) size
-    {
-        page = 0;
-        Serial.println("Please Reload and/or Enter Number of Trees in Magazine");
-        ControllerState = 70;
-        prev_ControllerState = 0;
-    }
-    else if (ControllerState == 1) // Wait for start command
-    {
-        page = 1;
-        Serial.println("Waiting for Start Command");
-        ControllerState = 70;
-        prev_ControllerState = 1;
-    }
-    else if (ControllerState == 2) // Move. Don't Drill !!
-    {
-        page = 2;
-        Serial.println("Moving!!");
-        create_Sweeper_GCODE(0, GCODE);
-        send_GCODE(GCODE);
-        ControllerState = 50;
-        prev_ControllerState = 2;
-    }
-    else if (ControllerState == 3) // Move. Don't Drill !!
-    {
-        create_Manipulator_GCODE(WIDTH / 2, Y_SIDE + distance - 5, GCODE);
-        send_GCODE(GCODE);
-        ControllerState = 50;
-        prev_ControllerState = 3;
-    }
-    else if (ControllerState == 4) // Drill and move
-    {
-        page = 3;
-        Serial.println("Drilling!!");
-        create_Manipulator_GCODE(0, distance + 15, GCODE);
-        send_GCODE(GCODE);
-        turn_On_Drill();
-        ControllerState = 50;
-        prev_ControllerState = 4;
-    }
-    else if (ControllerState == 5) // Move. Don't Drill !!
-    {
-        page = 2
-        Serial.println("Moving!!");
-        create_Manipulator_GCODE(0, Y_SIDE + distance + 15, GCODE);
-        send_GCODE(GCODE);
-        ControllerState = 50;
-        prev_ControllerState = 5;
-    }
-    else if (ControllerState == 6) // Place Tree
-    {
-        page = 4;
-        Serial.println("Planting!!");
-        create_Magazine_GCODE(GCODE);
-        send_GCODE(GCODE);
-        ControllerState = 60;
-        prev_ControllerState = 6;
-    }
-    else if (ControllerState == 7) // Activate sweeper
-    {
-        page = 5;
-        Serial.println("Sweeping!!");
-        create_Sweeper_GCODE(0, GCODE);
-        send_GCODE(GCODE);
-        ControllerState = 50;
-        prev_ControllerState = 7;
-    }
-
-    // Transitions
-    /*if (ControllerState == 0 && get_NumberOfTrees())
-    {
-        ControllerState = 1;
-    }
-
-    // Waiting ControllerStates
-    // ControllerState 50 - Waiting for response from RAMPS
-    // ControllerState 60 - Waiting for tree drop (10sec) then repeat step
-    // ControllerState 70 - Waiting for LCD or Serial Comms
-    if (ControllerState == 50)
-    {
-        delay(1000);
-        if (receive_Data(RECV))
-        {
-            ControllerState = (prev_ControllerState) * (prev_ControllerState < 7) + 1 * (trees > 0);
-            delay(1000);
-        }
-        else
-        {
-            send_GCODE(GCODE);
-            delay(1000);
-        }
-    }
-    if (ControllerState == 60)
-    {
-        if (read_Barrier_Sens())
-        {
-            trees--;
-            ControllerState = ((prev_ControllerState) * (prev_ControllerState < 7) + 1) * (trees > 0);
-        }
-    }*/
 }
