@@ -1,170 +1,162 @@
 #include "Gcode.h"
-#include <Arduino.h>
-#include <Wire.h>
 
-#define I2C_ADDRESS 8
-#define FREE "fre"     // the slave (RAMPS) is free to receive another message
-#define OCCUPIED "ocp" // the slave(RAMPS) is occupied and cannot receive another message
-#define SETUP_1 "G17"
-#define SETUP_2 "G21"
-#define SETUP_3 "G91"
-#define MOVING 1
-#define WIDTH 100
-#define HEIGHT 100
-#define X_SIDE 5            // distance from the middle to the side (f)
-#define Y_SIDE 30           // distance from the bottom (j)
-#define X_OBSTACLE 20       // position to avoid the tree storage on the right
-#define MAG_ANGLE 60        // Rotate magazine
-#define SWEEPER_DISTANCE 20 // Amount to close sweeper
-#define MOV_SPEED 100       // movemente speed mm/min
-
-void setup_Wire(void)
-{
-    Wire.begin(I2C_ADDRESS);
-}
-
-int send_GCODE(char *buff)
-{
-    // Serial.print("[Arduino]: A enviar gcode: ");
-
-    // Start the transmission, send the message to the slave and ends the transmission
-    Wire.beginTransmission(I2C_ADDRESS);
-    Wire.write(buff);
-    int res = Wire.endTransmission();
-
-    return res;
-    // Serial.println(buff);
-}
-
-bool updateState()
+// RUN THIS ON SETUP
+// Will configure the i2c communication responsable to send the gcode commands
+void gcode_configuration()
 {
 
-    // Serial.print("Update: ");
-    char slave_response[4];
-
-    Wire.requestFrom(I2C_ADDRESS, 3);
-    int i = 0;
-
-    while (Wire.available())
-    {
-
-        slave_response[i] = Wire.read();
-        i++;
-    }
-
-    slave_response[i] = '\0';
-
-    return strcmp(slave_response, FREE) == 0;
-    // Serial.print("Resposta: ");
-    // Serial.println(slave_response);
+  Wire.begin(I2CADDRESS);
 }
 
+// Send the gcode command to the slave (the RAMPS)
+void sendGcode(char gcode[])
+{
+
+  // Start the transmission, send the message to the slave and ends the transmission
+  Wire.beginTransmission(I2CADDRESS);
+  Wire.write(gcode);
+  Wire.endTransmission();
+}
+
+// Checks if the slave (RAMPS) is ready to receive another message or not
+void updateState(char *message_received)
+{
+
+  Wire.requestFrom(I2CADDRESS, MESSAGE_SIZE);
+  int i = 0;
+
+  while (Wire.available())
+  {
+
+    message_received[i] = Wire.read();
+    i++;
+  }
+
+  message_received[i] = '\0';
+}
+
+////ADICIONAR MAIS UM PARAMETRO QUE É A ALTURA DA BROCA AO CHÃO (LIDO PELO SENSOR + OFFSET QUE POSSA HAVER DA BROCA QUANDO MANIPULADOR ESTÁ EM CIMA)
+////FAZER MAIS UM ESTADO QUE DESCE POR EXEMPLO "ALTURA - 10 CM" (PARA SE ATIVAR O MOTOR DA BROCA) E OUTRO ESTADO QUE DESCE 20 CM
+////ADICIONAR RETURN PARA ESTA SITUAÇÃO
 // Controls the manipulator
 // This function will send the gcode commands by i2c to the Ramps
-int manipulator_control(int &manipulator_state)
+int manipulator_control(int &manipulator_state, int height)
 {
+
+  // Create aux variables
+  char slave_response[MESSAGE_SIZE + 1]; //+1 due to '\0'
+
+  // Check if RAMPS is free to receive a new command
+  updateState(slave_response);
+
+  // RAMPS is free and send the message
+  if (strcmp(slave_response, FREE) == 0)
+  {
+
+    // Create string variable
     String gcode;
-    // Check if RAMPS is free to receive a new command
 
-    // RAMPS is free and send the message
-    if (updateState())
+    // Checks the message to send
+    switch (manipulator_state)
     {
-
-        switch (manipulator_state)
-        {
-        case 0:
-            gcode = String(SETUP_1);
-            break;
-        case 1:
-            gcode = String(SETUP_2);
-            break;
-        case 2:
-            gcode = String(SETUP_3);
-            break;
-        case 3:
-            gcode = "G0 X" + String(WIDTH / 2) + " F" + String(MOV_SPEED);
-            break;
-        case 4:
-            gcode = "G1 Y" + String(HEIGHT) + " F" + String(MOV_SPEED);
-            break;
-        case 5: // Depois de fazer o buraco
-            gcode = "G1 Y-" + String(Y_SIDE) + " F" + String(MOV_SPEED);
-            break;
-        case 6:
-            gcode = "G1 X-" + String(X_SIDE) + " F" + String(MOV_SPEED);
-            break;
-        case 7: // Depois de tirar a terra
-            gcode = "G1 X" + String(2 * X_SIDE) + " F" + String(MOV_SPEED);
-            break;
-        case 8:
-            gcode = "G1 Y" + String(HEIGHT - Y_SIDE) + " F" + String(MOV_SPEED);
-            break;
-        }
-
-        // Send the command to RAMPS
-        char char_arr[gcode.length() + 1];
-        gcode.toCharArray(char_arr, gcode.length() + 1);
-        char_arr[gcode.length() + 1] = '\0';
-        send_GCODE(char_arr);
-
-        // Updates the state of the state_machine
-        // WARNING: ALSO NEEDS TO IMPLEMENT THE RESET
-        manipulator_state++;
+    case 0:
+      gcode = String(SETUP_1);
+      break;
+    case 1:
+      gcode = String(SETUP_2);
+      break;
+    case 2:
+      gcode = String(GO_HOME);
+      break;
+    case 3:
+      gcode = "G0 X" + String(WIDTH / 2);
+      break;
+    case 4:
+      gcode = "G1 Y" + String(HEIGHT + height - 50);
+      break;
+    case 5: // Start drill
+      gcode = "G1 Y" + String(HOLESIZE);
+      break;
+    case 6: // Stop drill
+      gcode = "G1 Y-" + String(HOLESIZE + 20);
+      break;
+    case 7: // Depois de fazer o buraco
+      gcode = "G1 Y-" + String(Y_SIDE);
+      break;
+    case 8:
+      gcode = "G1 X-" + String(X_SIDE);
+      break;
+    case 9: // Depois de tirar a terra
+      gcode = "G1 X" + String(2 * X_SIDE);
+      break;
+    case 10:
+      gcode = "G1 Y" + String(HEIGHT - Y_SIDE);
+      break;
+    default:
+      gcode = "M117 ACABOU";
+      break;
     }
 
-    // Returns the current state of the manipulator
-    if (manipulator_state == 1)
-        return MOVING;
-}
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
+    // Convert String to array of chars
+    char char_arr[gcode.length() + 1];
+    gcode.toCharArray(char_arr, gcode.length() + 1);
+    char_arr[gcode.length() + 1] = '\0';
 
-/*void create_Manipulator_GCODE(int x_axis, int y_axis, char *buff)
-{
-    ////free(GCODE);
-    String aux;
-    aux = "G0 X" + String(x_axis) + "Y" + String(y_axis) + " F" + String(MOV_SPEED);
-    GCODE = (char *)malloc(sizeof(char) * (aux.length() + 1));
-    aux.toCharArray(GCODE, aux.length() + 1);
-    GCODE[aux.length() + 1] = '\0';
+    // Send the command to RAMPS
+    sendGcode(char_arr);
+
+    // Updates the state of the state_machine
+    // WARNING: ALSO NEEDS TO IMPLEMENT THE RESET (Will depends on the number of states in total)
+    if (manipulator_state < 11)
+      manipulator_state++;
+  }
+
+  // Returns the current state of the manipulator
+  // WARINING: NEED TO ADD THE OTHER STATES
+  if (manipulator_state == 1)
+    return MOVING;
+  if (manipulator_state == 11)
+    return DONE;
 }
 
-void create_Magazine_GCODE(char *buff)
+// Controls the sweeper the drag the dirt back to the hole
+int sweeper_control(int &sweeper_state)
 {
-    // free(GCODE);
-    String aux;
-    aux = "G0 Z" + String(MAG_ANGLE) + " F" + String(MOV_SPEED);
-    GCODE = (char *)malloc(sizeof(char) * (aux.length() + 1));
-    aux.toCharArray(GCODE, aux.length() + 1);
-    GCODE[aux.length() + 1] = '\0';
-}
 
-void create_Sweeper_GCODE(int close_Open, char *buff)
-{
-    if (close_Open == 0) // Close
+  // Create aux variables
+  char slave_response[MESSAGE_SIZE + 1]; //+1 due to '\0'
+
+  // Check if RAMPS is free to receive a new command
+  updateState(slave_response);
+
+  // RAMPS is free and send the message
+  if (strcmp(slave_response, FREE) == 0)
+  {
+
+    if (sweeper_state == 0)
     {
-        // free(GCODE);
-        String aux;
-        aux = "G0 E" + String(SWEEPER_DISTANCE) + " F" + String(MOV_SPEED);
-        GCODE = (char *)malloc(sizeof(char) * (aux.length() + 1));
-        aux.toCharArray(GCODE, aux.length() + 1);
-        GCODE[aux.length() + 1] = '\0';
+
+      // Create string variable
+      String gcode;
+      // ADD GCODE COMMAND
+      // gcode = String(SETUP_1);
+
+      // Convert String to array of chars
+      char char_arr[gcode.length() + 1];
+      gcode.toCharArray(char_arr, gcode.length() + 1);
+      char_arr[gcode.length() + 1] = '\0';
+
+      // Send the command to RAMPS
+      sendGcode(char_arr);
+
+      sweeper_state++;
     }
-    else if (close_Open == 1) // Open
+    else
     {
-        // free(GCODE);
-        String aux;
-        aux = "G0 E-" + String(SWEEPER_DISTANCE) + " F" + String(MOV_SPEED);
-        GCODE = (char *)malloc(sizeof(char) * (aux.length() + 1));
-        aux.toCharArray(GCODE, aux.length() + 1);
-        GCODE[aux.length() + 1] = '\0';
+      sweeper_state = 0;
+
+      return DONE;
     }
-}*/
+  }
+  return MOVING;
+}

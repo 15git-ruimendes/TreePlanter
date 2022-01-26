@@ -3,7 +3,7 @@
 #include "Servo.h"
 #include "Arduino.h"
 #include "LCD_display.h"
-#include "arduino/gcode/Gcode.h"
+#include "Gcode.h"
 #include "U8glib.h"
 #include <SharpIR.h>
 
@@ -24,6 +24,7 @@
 #define DRILL_EN 10
 #define DRILL_PWM1 5
 #define DRILL_PWM2 6
+#define DRILL_MOTOR 5
 
 #define ServoPin 9
 
@@ -44,7 +45,7 @@ void setup()
 {
     treeDrop.attach(ServoPin);
     driver.enable();
-    setup_Wire();
+    gcode_configuration();
     lcd.setup_LCD(u8g);
     Serial.begin(115200);
 
@@ -65,7 +66,7 @@ long double read_Distance()
 
 void turn_Drill(int on)
 {
-    if (on)
+    /*if (on)
     {
         for (int i = 0; i < 10; i++)
         {
@@ -119,12 +120,17 @@ void turn_Drill(int on)
             speed = 0;
             driver.setOutput(speed);
         }
-    }
+    }*/
+
+    if (on) 
+      digitalWrite(DRILL_MOTOR,HIGH);
+    else 
+      digitalWrite(DRILL_MOTOR,LOW);
 }
 
 bool read_Barrier_Sens()
 {
-    if (analogRead(BARRIER) > 10)
+    if (analogRead(BARRIER) > 25)
     {
         return false;
     }
@@ -132,7 +138,7 @@ bool read_Barrier_Sens()
     {
         if (millis() - prev_time > 10)
         {
-            Serial.println("Droped");
+
             return true;
         }
         else
@@ -252,7 +258,7 @@ void loop()
         manipulator_control(manipulator_state, int(distance));
         state = manipulator_state;
     }
-    if (state > 4 && state != 7)
+    if (state >= 4 && state != 7&& state != 10 && state != 401)
     {
         manipulator_control(manipulator_state, int(distance));
         switch (manipulator_state)
@@ -284,8 +290,11 @@ void loop()
     }
 
     // Error State
-    if (state == 401) // infinite tree not found
-        page = 101;
+    if (state == 401){
+      // infinite tree not found
+      page = 101;
+    }
+        
 
     // Retry to deploy a tree from the magazine if tree is not detected within TREE_DELAY ms
     if (state == 7 && (millis() - treeWait > TREE_DELAY))
