@@ -12,7 +12,7 @@
 #define X_SIDE 5      // distance from the middle to the side (f)
 #define Y_SIDE 30     // distance from the bottom (j)
 #define X_OBSTACLE 20 // position to avoid the tree storage on the right
-#define MOV_SPEED 100 // movemente speed mm/min
+#define MOV_SPEED 50 // movemente speed mm/min
 #define HOLESIZE 150
 
 // Slave messages

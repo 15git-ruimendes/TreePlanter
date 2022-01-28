@@ -28,10 +28,10 @@
 
 #define ServoPin 9
 
-SharpIR detect(DIST_SENS, DIST_SENS_MODEL);
+SharpIR detect(SharpIR::GP2Y0A41SK0F, A1);
 
 int trees = 0, tree_dropped = 0, pos = 0;
-long double distance = 0;
+float distance = 0;
 int page = 1;
 int movement, manipulator_state = 0, state = 0, res, top_page = 0, reload = 0, prev_state = 1;
 static unsigned long last_interrupt = 0, prev_time = 0, treeWait = 0;
@@ -59,7 +59,7 @@ void setup()
     // while (!calibrate_Manipulator());
 }
 
-long double read_Distance()
+float read_Distance()
 {
     return detect.getDistance();
 }
@@ -136,9 +136,9 @@ bool read_Barrier_Sens()
     }
     else if (analogRead(BARRIER) == 0)
     {
-        if (millis() - prev_time > 10)
+        if (millis() - prev_time > 100)
         {
-
+            Serial.println("Dropped");
             return true;
         }
         else
@@ -158,8 +158,10 @@ void click()
     }
     last_interrupt = millis();
     Serial.println("button");
-    if (state != 3 && state != 10)
-        state = 401;
+    if (state != 3 && state != 10){
+      
+    }
+        //state = 401;
     else if (state == 3 && top_page)
     {
         state = 10; // Reload page
@@ -251,7 +253,6 @@ void loop()
             Serial.println(trees);
         }
     }
-
     // States to Stop Manipulator Movement
     if (state < 3 && manipulator_state < 3)
     {
@@ -308,9 +309,14 @@ void loop()
     }
 
     // Reload State
-    if (state == 3 && trees == 0)
+    if (state == 3 && trees == 0){
         state = 10;
-
+        distance = read_Distance()*20;
+        if (distance > 120){
+          distance = 12;
+        }
+        //Serial.println((int)distance);
+    }
     // Testing
     /*if (state >= 0 && state <= 6)
     {
@@ -331,7 +337,11 @@ void loop()
         break;
     case 3: // Waiting for start
         page = 1;
-        distance = read_Distance();
+        distance = read_Distance()*20;
+        if (distance > 120){
+          distance = 12;
+        }
+        Serial.println((int)distance);
         break;
     case 4: // Moving drill
         page = 2;
@@ -341,7 +351,7 @@ void loop()
         page = 3;
         break;
     case 6: // Moving Drill
-        turn_Drill(-1);
+        turn_Drill(1);
         page = 2;
         break;
     case 7: // Drop tree
@@ -354,7 +364,7 @@ void loop()
             // Continue Machine State
             // Comment this line when sweepers are built and
             // system to drop dirt is built
-            manipulator_state = 9;
+            manipulator_state = 8;
         }
         page = 4;
         break;

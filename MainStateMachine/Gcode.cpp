@@ -75,7 +75,7 @@ int manipulator_control(int &manipulator_state, int height)
       gcode = "G1 Y" + String(HEIGHT + height - 50);
       break;
     case 5: // Start drill
-      gcode = "G1 Y" + String(HOLESIZE);
+      gcode = "G1 Y" + String(HOLESIZE+50);
       break;
     case 6: // Stop drill
       gcode = "G1 Y-" + String(HOLESIZE + 20);
@@ -83,7 +83,7 @@ int manipulator_control(int &manipulator_state, int height)
     case 7: // Depois de fazer o buraco
       gcode = "G1 Y-" + String(Y_SIDE);
       break;
-    case 8:
+    /*case 8:
       gcode = "G1 X-" + String(X_SIDE);
       break;
     case 9: // Depois de tirar a terra
@@ -91,6 +91,9 @@ int manipulator_control(int &manipulator_state, int height)
       break;
     case 10:
       gcode = "G1 Y" + String(HEIGHT - Y_SIDE);
+      break;*/
+    case 8:
+      gcode = String(GO_HOME);
       break;
     default:
       gcode = "M117 ACABOU";
@@ -107,7 +110,7 @@ int manipulator_control(int &manipulator_state, int height)
 
     // Updates the state of the state_machine
     // WARNING: ALSO NEEDS TO IMPLEMENT THE RESET (Will depends on the number of states in total)
-    if (manipulator_state < 11)
+    if (manipulator_state < 9)
       manipulator_state++;
   }
 
@@ -115,7 +118,7 @@ int manipulator_control(int &manipulator_state, int height)
   // WARINING: NEED TO ADD THE OTHER STATES
   if (manipulator_state == 1)
     return MOVING;
-  if (manipulator_state == 11)
+  if (manipulator_state == 9)
     return DONE;
 }
 
