@@ -159,7 +159,7 @@ void click()
     last_interrupt = millis();
     Serial.println("button");
     if (state != 3 && state != 10){
-      
+      state = 401;
     }
         //state = 401;
     else if (state == 3 && top_page)
@@ -293,6 +293,7 @@ void loop()
     // Error State
     if (state == 401){
       // infinite tree not found
+      manipulator_state = 401;
       page = 101;
     }
         
@@ -300,11 +301,9 @@ void loop()
     // Retry to deploy a tree from the magazine if tree is not detected within TREE_DELAY ms
     if (state == 7 && (millis() - treeWait > TREE_DELAY))
     {
-        pos += 45;
-        if (pos > 360)
-            pos = 0;
-        treeDrop.write(pos);
+        treeDrop.write(91);
         delay(100);
+        treeDrop.write(90);
         treeWait = millis();
     }
 

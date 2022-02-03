@@ -99,7 +99,16 @@ int manipulator_control(int &manipulator_state, int height)
       gcode = "M117 ACABOU";
       break;
     }
+    if (manipulator_state == 401){//Emergency stop
+      gcode = "M112";
+      // Convert String to array of chars
+    char char_arr[gcode.length() + 1];
+    gcode.toCharArray(char_arr, gcode.length() + 1);
+    char_arr[gcode.length() + 1] = '\0';
 
+    // Send the command to RAMPS
+    sendGcode(char_arr);  
+    }
     // Convert String to array of chars
     char char_arr[gcode.length() + 1];
     gcode.toCharArray(char_arr, gcode.length() + 1);
