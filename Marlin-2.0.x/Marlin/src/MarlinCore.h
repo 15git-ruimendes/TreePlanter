@@ -27,6 +27,37 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+
+//////////////////////////////////////////////////////////////////
+//                     TEAM F CONFIGURATION                     //
+//////////////////////////////////////////////////////////////////
+
+//INCLUDES
+#include <Wire.h> //For I2C communication
+
+//DEFINES
+#define FREE "fre" //RAMPS is free to receive a new command
+#define OCCUPIED "ocp" //RAMPS is occupied to receive a new command
+
+
+//FUNCTIONS
+//Receives the master data by I2C
+//int bytes -> number of bytes received by the master
+void receiveEvent(int bytes);
+
+//Tell the master if the slave is free to receive a new command
+void requestEvent();
+
+
+///////////////////////////////////////////////////////////7
+void send_message(char msg[]);
+
+
+
+//////////////////////////////////////////////////////////////////
+//                 END OF TEAM F CONFIGURATION                  //
+//////////////////////////////////////////////////////////////////
+
 void stop();
 
 // Pass true to keep steppers from timing out
