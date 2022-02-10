@@ -55,8 +55,8 @@ SerialInterface
   
   ## Connections Diagram
   
-  ![Connection Diagram](https://github.com/15git-ruimendes/TreePlanter/main/Connections.png)
+  ![Connection Diagram](Connections.png)
   
   ## State Machine Diagram
   
-  ![Connection Diagram](https://github.com/15git-ruimendes/TreePlanter/main/StateMachine.png)
+  ![State Machine Diagram](StateMachine.png)
