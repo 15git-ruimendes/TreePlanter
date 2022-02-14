@@ -15,7 +15,7 @@
 
 #define DIST_SENS A1
 #define DIST_SENS_MODEL 1080
-#define BARRIER A0
+#define BARRIER 19
 
 #define ENC_BUTTON 18
 #define ENC_RIGHT 2
@@ -26,11 +26,24 @@
 #define DRILL_PWM2 6
 #define DRILL_MOTOR 5
 
+#define UP 0
+#define DOWN 180
+#define TIMER_MS 1500
+
 #define ServoPin 9
 
 SharpIR detect(SharpIR::GP2Y0A41SK0F, A1);
 
-int trees = 0, tree_dropped = 0, pos = 0;
+
+//Servo
+Servo sweeper_left, sweeper_right;
+int pin_left = 11, pin_right = 12;
+int servo_state = 0, rotator_state = 0;
+unsigned long timer_1 = 0;
+unsigned long timer_2 = 0;
+
+int trees = 0, pos = 0;
+bool treeDropped = false;
 float distance = 0;
 int page = 1;
 int movement, manipulator_state = 0, state = 0, res, top_page = 0, reload = 0, prev_state = 1;
@@ -56,7 +69,32 @@ void setup()
     pinMode(ENC_LEFT, INPUT_PULLUP);
     attachInterrupt(digitalPinToInterrupt(ENC_LEFT), left, FALLING);
 
+    pinMode(BARRIER,INPUT_PULLUP);
+    attachInterrupt(digitalPinToInterrupt(BARRIER),read_Barrier_Sens,LOW);
+    //attachInterrupt(digitalPinToInterrupt(BARRIER),read_Barrier_Sens,
     // while (!calibrate_Manipulator());
+
+    //Servo
+    sweeper_left.attach(pin_left);
+    sweeper_right.attach(pin_right);
+}
+
+void start_timer(unsigned long &timer){
+    timer = millis();
+}
+
+bool check_timer(unsigned long timer, unsigned long interval){
+  return ((millis()-timer) >= interval);
+}
+
+void sweeper_sweep(){
+  sweeper_left.write(UP);
+  sweeper_right.write(DOWN);
+}
+
+void sweeper_home(){
+  sweeper_left.write(DOWN);
+  sweeper_right.write(UP);
 }
 
 float read_Distance()
@@ -130,23 +168,19 @@ void turn_Drill(int on)
 
 bool read_Barrier_Sens()
 {
-    if (analogRead(BARRIER) > 25)
-    {
-        return false;
-    }
-    else if (analogRead(BARRIER) == 0)
-    {
-        if (millis() - prev_time > 100)
-        {
-            Serial.println("Dropped");
-            return true;
-        }
-        else
-        {
-            prev_time = millis();
-            return false;
-        }
-    }
+  /*if(millis() - last_interrupt < DELAY || treeDropped == true){
+    return;
+  }*/
+  if (state == 7 && rotator_state == 0)
+  {
+    treeDropped = true;
+    //Serial.println("caiou Crl");
+  }
+    
+  else 
+    treeDropped = false;
+  
+    
 }
 
 void click()
@@ -159,7 +193,7 @@ void click()
     last_interrupt = millis();
     Serial.println("button");
     if (state != 3 && state != 10){
-      state = 401;
+      //state = 401;
     }
         //state = 401;
     else if (state == 3 && top_page)
@@ -206,8 +240,8 @@ void left()
 void loop()
 {
 
-    bool treeDropSens = read_Barrier_Sens();
-
+    
+    //treeDropped = read_Barrier_Sens();
     // LCD functions
     u8g.firstPage();
     do
@@ -271,12 +305,12 @@ void loop()
             state = 4;
             break;
         case 5:
-            state = 5;
+            state = 4;
             break;
         case 6:
-            state = 6;
+            state = 5;
             break;
-        case 7:
+        case 8:
             state = 7;
             break;
         default:
@@ -301,10 +335,11 @@ void loop()
     // Retry to deploy a tree from the magazine if tree is not detected within TREE_DELAY ms
     if (state == 7 && (millis() - treeWait > TREE_DELAY))
     {
-        treeDrop.write(91);
-        delay(100);
-        treeDrop.write(90);
-        treeWait = millis();
+      //Starts the rotator machine state
+      
+      rotator_state = 1;
+        
+      treeWait = millis();
     }
 
     // Reload State
@@ -340,7 +375,7 @@ void loop()
         if (distance > 120){
           distance = 12;
         }
-        Serial.println((int)distance);
+        //Serial.println((int)distance);
         break;
     case 4: // Moving drill
         page = 2;
@@ -350,12 +385,12 @@ void loop()
         page = 3;
         break;
     case 6: // Moving Drill
-        turn_Drill(1);
         page = 2;
+        treeDropped = false;
         break;
     case 7: // Drop tree
         turn_Drill(0);
-        if (treeDropSens)
+        if (treeDropped)
         {
             trees--;
             state++;
@@ -364,11 +399,14 @@ void loop()
             // Comment this line when sweepers are built and
             // system to drop dirt is built
             manipulator_state = 8;
+            servo_state = 1;
         }
         page = 4;
         break;
     case 8: // Sweepers (not built)
         page = 5;
+        treeDropped = false;
+        
         break;
     case 10: // Reload
         page = 0;
@@ -376,4 +414,51 @@ void loop()
     default:
         break;
     }
+
+    //Servo state machine
+    switch(servo_state){
+      
+    case 0:
+      //Check if this line is not fucking everything up
+        
+      break;
+    case 1:
+        start_timer(timer_1);
+       
+        sweeper_sweep();
+        servo_state = 2;
+        
+        //Serial.println("Sweeping");
+      break;
+    case 2:
+      if(check_timer(timer_1,TIMER_MS)){
+
+        sweeper_home();
+        servo_state = 0;
+        //Serial.println("Returning home");
+      }
+      break;
+  }
+
+  //Rotator state
+  switch(rotator_state){
+      case 0:
+        break;
+      case 1:
+        treeDrop.write(45);
+        start_timer(timer_2);
+        rotator_state = 2;
+        break;
+      case 2:
+        if(check_timer(timer_2,124)){
+          
+          treeDrop.write(90);
+          rotator_state = 0;
+          //Serial.println("Rota");
+        }
+        break;
+    }
+
+
+    
 }
