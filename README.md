@@ -10,43 +10,7 @@ The scope of the devolpment portion achived throught this semester resulted in t
 
 The code gathered in this directory was organized as follows:
 
-|
-Marlin 2.0 (Firmware used)
-
-  |...
-  
-  |--Config_Adv.h
-  
-  |--Config.h
-  
-  |--Marlin.ino
-  
- |I2C Testing (I2C and GCODE testing code)
- 
-MainStateMachine
-
-  |...
-  
-  |--DCMotorSpeedControl.ino
-  
-  |--BarrierSens.ino
-  
-  |--DistanceSens.ino
-  
-  |--I2CTest.ino
-  
-  |--LCDLib.h
-  
-  |--LCDLib.cpp
-  
-  |--MainStateMachine.ino
-  
-SerialInterface
-
-  |...
-  
-  |Interface.py
-  
+  ![Files Diagram](FilesOrg.png)
   
   Thusly, the code present in the Marlin folder discribes the firmware used to control the manipulator that moves the drill. This firmware was corrected and altered for the porpouses of this project and to control and combine with the shield RAMPS 1.4 used.
   
